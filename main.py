@@ -293,6 +293,121 @@ def add_librarian(conn, Librarian):
     cur = conn.cursor()
     cur.execute(sql, Librarian)
     conn.commit()
+
+
+# Library Management Functions
+def find_item(conn, search_term):
+    sql = '''SELECT * FROM Item WHERE Title LIKE ? OR AuthorPublisher LIKE ?'''
+    cur = conn.cursor()
+    cur.execute(sql, (f'%{search_term}%', f'%{search_term}%'))
+    return cur.fetchall()
+
+def borrow_item(conn, member_id, item_id):
+    sql = '''INSERT INTO BorrowingRecord (MemberID, ItemID, DueDate) 
+             VALUES (?, ?, date('now', '+30 days'))'''
+    cur = conn.cursor()
+    cur.execute(sql, (member_id, item_id))
+    conn.commit()
+    return cur.lastrowid
+
+def return_item(conn, record_id):
+    sql = '''UPDATE BorrowingRecord 
+             SET ReturnDate = date('now') 
+             WHERE RecordID = ?'''
+    cur = conn.cursor()
+    cur.execute(sql, (record_id,))
+    conn.commit()
+
+def donate_item(conn, donor_id, title, item_type, author_publisher=None):
+    sql = '''INSERT INTO Donation (DonorID, ItemTitle, ItemType, DateReceived) 
+             VALUES (?, ?, ?, date('now'))'''
+    cur = conn.cursor()
+    cur.execute(sql, (donor_id, title, item_type))
+    conn.commit()
+    return cur.lastrowid
+
+def find_events(conn, search_term=None):
+    sql = '''SELECT * FROM Event 
+             WHERE EventName LIKE ? OR EventDate >= date('now')'''
+    cur = conn.cursor()
+    cur.execute(sql, (f'%{search_term}%',) if search_term else ('%',))
+    return cur.fetchall()
+
+def register_for_event(conn, member_id, event_id):
+    sql = '''INSERT INTO EventRegistration (EventID, MemberID) VALUES (?, ?)'''
+    cur = conn.cursor()
+    cur.execute(sql, (event_id, member_id))
+    conn.commit()
+    return cur.lastrowid
+
+def volunteer_signup(conn, name, email, phone):
+    sql = '''INSERT INTO Volunteer (Name, EmailAddress, PhoneNumber) VALUES (?, ?, ?)'''
+    cur = conn.cursor()
+    cur.execute(sql, (name, email, phone))
+    conn.commit()
+    return cur.lastrowid
+
+def request_help(conn, member_id, description):
+    sql = '''INSERT INTO HelpRequest (MemberID, Description) VALUES (?, ?)'''
+    cur = conn.cursor()
+    cur.execute(sql, (member_id, description))
+    conn.commit()
+    return cur.lastrowid
+
+# Sample data population
+def populate_sample_data(conn):
+    # Sample LibraryRoom data
+    rooms = [
+        (30, 'Study Room'),
+        (100, 'Event Hall'),
+        (20, 'Computer Lab'),
+        (15, 'Meeting Room'),
+        (50, 'Reading Room')
+    ]
+    
+    for room in rooms:
+        add_library_room(conn, room)
+
+    # Sample Person/Member data
+    persons = [
+        ('John Doe', '123 Main St', '555-0101', 'john@email.com', 'Member'),
+        ('Jane Smith', '456 Oak Ave', '555-0102', 'jane@email.com', 'Librarian'),
+        ('Bob Wilson', '789 Pine Rd', '555-0103', 'bob@email.com', 'Member'),
+        ('Alice Brown', '321 Elm St', '555-0104', 'alice@email.com', 'Volunteer')
+    ]
+    
+    for person in persons:
+        add_person(conn, person)
+
+    # Sample Items
+    items = [
+        ('The Great Gatsby', 'Book', 'F. Scott Fitzgerald', 1, '978-0743273565', 1925),
+        ('To Kill a Mockingbird', 'Book', 'Harper Lee', 1, '978-0446310789', 1960),
+        ('Python Programming', 'Book', 'John Smith', 1, '978-1234567890', 2020),
+        ('The Matrix', 'DVD', 'Warner Bros', 1, None, 1999)
+    ]
+    
+    for item in items:
+        add_item(conn, item)
+
+    # Sample Events
+    events = [
+        ('Book Club Meeting', '2024-02-01', 0, 1),
+        ('Children Story Time', '2024-02-05', 0, 2),
+        ('Programming Workshop', '2024-02-10', 0, 3)
+    ]
+    
+    for event in events:
+        add_event(conn, event)
+
+# Populate the database with sample data
+try:
+    with sqlite3.connect('354_mini_project.db') as conn:
+        populate_sample_data(conn)
+        print("Sample data inserted successfully.")
+except sqlite3.Error as e:
+    print("Error inserting sample data:", e)
+
     return cur.lastrowid
 
 def add_volunteer(conn, Volunteer):
