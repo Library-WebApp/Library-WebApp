@@ -10,9 +10,6 @@ sql_statements = [
             AvailabilityStatus BOOLEAN DEFAULT 1,
             ISBN TEXT,
             PublicationYear INTEGER,
-            DueDate DATE,
-            BorrowerID INTEGER,
-            FOREIGN KEY (BorrowerID) REFERENCES Member(MemberID)
         );""",
 
     """CREATE TABLE IF NOT EXISTS Person (
@@ -39,11 +36,16 @@ sql_statements = [
 
     """CREATE TABLE IF NOT EXISTS Volunteer (
             VolunteerID INTEGER PRIMARY KEY REFERENCES Person(PersonID),
-            Name TEXT NOT NULL,
-            EmailAddress TEXT NOT NULL,
-            PhoneNumber TEXT
+            JoinDate TEXT NOT NULL,
+            MembershipStatus TEXT NOT NULL
     );""",
   
+    """CREATE TABLE IF NOT EXISTS LibraryRoom (
+            RoomID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Capacity INTEGER NOT NULL,
+            RoomType TEXT NOT NULL
+    );""",
+
     """CREATE TABLE IF NOT EXISTS Event (
             EventID INTEGER PRIMARY KEY AUTOINCREMENT,
             EventName TEXT NOT NULL,
@@ -51,12 +53,6 @@ sql_statements = [
             Attendance INTEGER NOT NULL,
             RoomID INTEGER,
             FOREIGN KEY (RoomID) REFERENCES LibraryRoom(RoomID)
-    );""",
-  
-    """CREATE TABLE IF NOT EXISTS LibraryRoom (
-            RoomID INTEGER PRIMARY KEY AUTOINCREMENT,
-            Capacity INTEGER NOT NULL,
-            RoomType TEXT NOT NULL
     );""",
 
     """CREATE TABLE IF NOT EXISTS BorrowingRecord (
@@ -264,8 +260,8 @@ triggers = [
 
 def add_item(conn, Item):
     try:
-        sql = '''INSERT INTO Item (Title, Type, AuthorPublisher, AvailabilityStatus, ISBN, PublicationYear, DueDate, BorrowerID)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)''' 
+        sql = '''INSERT INTO Item (Title, Type, AuthorPublisher, AvailabilityStatus, ISBN, PublicationYear)
+                 VALUES (?, ?, ?, ?, ?, ?)''' 
         cur = conn.cursor()
         cur.execute(sql, Item)  
         conn.commit()
@@ -302,7 +298,8 @@ def add_librarian(conn, Librarian):
     return cur.lastrowid
 
 def add_volunteer(conn, Volunteer):
-    sql = '''INSERT INTO Volunteer (VolunteerID, Name, EmailAddress, PhoneNumber) VALUES (?, ?, ?, ?)'''
+    sql = '''INSERT INTO Volunteer (VolunteerID, JoinDate,
+            MembershipStatus) VALUES (?, ?, ?)'''
     cur = conn.cursor()
     cur.execute(sql, Volunteer)
     conn.commit()    
@@ -409,7 +406,7 @@ def register_for_event(conn, member_id, event_id):
 
 
 def volunteer_signup(conn, name, email, phone):
-    sql = '''INSERT INTO Volunteer (Name, EmailAddress, PhoneNumber) VALUES (?, ?, ?)'''
+    sql = '''INSERT INTO Volunteer (VolunteerID, JoinDate, MembershipStatus) VALUES (?, ?, ?)'''
     cur = conn.cursor()
     cur.execute(sql, (name, email, phone))
     conn.commit()
@@ -484,6 +481,7 @@ def populate_sample_data(conn):
     ]
 
     member_join_date = datetime.now().strftime('%Y-%m-%d')
+    volunteer_join_date = datetime.now().strftime('%Y-%m-%d')
     librarian_hire_date = datetime.now().strftime('%Y-%m-%d')
     librarian_salary = 80000  
 
@@ -499,21 +497,21 @@ def populate_sample_data(conn):
         elif role == 'Librarian':
             add_librarian(conn, (person_id, librarian_hire_date, librarian_salary))
         elif role == 'Volunteer':
-            add_volunteer(conn, (person_id, name, email, phone))
+            add_volunteer(conn, (person_id, volunteer_join_date, 'Active'))
 
     
     # Sample Items
     items = [
-        ('Sample Book', 'Book', 'Sample Publisher', 0, '1234567890', 2023, '2025-01-01', None),
-        ('The Great Gatsby', 'Book', 'F. Scott Fitzgerald', 1, '978-0743273565', 1925, None, None),
-        ('To Kill a Mockingbird', 'Book', 'Harper Lee', 1, '978-0446310789', 1960, None, None),
-        ('Python Programming', 'Book', 'John Smith', 1, '978-1234567890', 2020, None, None),
-        ('The Matrix', 'DVD', 'Warner Bros', 1, None, 1999, None, None),
-        ('1984', 'Book', 'George Orwell', 1, '978-0451524935', 1949, None, None),
-        ('The Catcher in the Rye', 'Book', 'J.D. Salinger', 1, '978-0316769488', 1951, None, None),
-        ('Inception', 'DVD', 'Warner Bros', 1, None, 2010, None, None),
-        ('The Hobbit', 'Book', 'J.R.R. Tolkien', 1, '978-0547928227', 1937, None, None),
-        ('The Lion King', 'DVD', 'Disney', 1, None, 1994, None, None)
+        ('Sample Book', 'Book', 'Sample Publisher', 0, '1234567890', 2023),
+        ('The Great Gatsby', 'Book', 'F. Scott Fitzgerald', 1, '978-0743273565', 1925),
+        ('To Kill a Mockingbird', 'Book', 'Harper Lee', 1, '978-0446310789', 1960),
+        ('Python Programming', 'Book', 'John Smith', 1, '978-1234567890', 2020),
+        ('The Matrix', 'DVD', 'Warner Bros', 1, None, 1999),
+        ('1984', 'Book', 'George Orwell', 1, '978-0451524935', 1949),
+        ('The Catcher in the Rye', 'Book', 'J.D. Salinger', 1, '978-0316769488', 1951),
+        ('Inception', 'DVD', 'Warner Bros', 1, None, 2010),
+        ('The Hobbit', 'Book', 'J.R.R. Tolkien', 1, '978-0547928227', 1937),
+        ('The Lion King', 'DVD', 'Disney', 1, None, 1994)
     ]
 
     for item in items:
@@ -604,16 +602,6 @@ def populate_sample_data(conn):
         add_help_request(conn, help_request)
 
 
-# Populate the database with sample data
-try:
-    with sqlite3.connect('354_mini_project.db') as conn:
-        populate_sample_data(conn)
-        print("Sample data inserted successfully.")
-except sqlite3.Error as e:
-    print("Error inserting sample data:", e)
-# create a database connection
-
-
 
 try:
     with sqlite3.connect('354_mini_project.db') as conn:
@@ -630,4 +618,13 @@ try:
         print("Tables created successfully.")
 except sqlite3.OperationalError as e:
     print("Failed to create tables:", e)
+
+# Populate the database with sample data
+try:
+    with sqlite3.connect('354_mini_project.db') as conn:
+        populate_sample_data(conn)
+        print("Sample data inserted successfully.")
+except sqlite3.Error as e:
+    print("Error inserting sample data:", e)
+
 
