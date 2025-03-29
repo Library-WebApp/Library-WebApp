@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Borrow Item{% endblock %}
+
+{% block content %}
+    <h1>Borrow Item</h1>
+    <form id="borrow-form">
+        <label for="member_id">Member ID:</label>
+        <input type="number" id="member_id" name="member_id" required><br><br>
+
+        <label for="item_id">Item ID:</label>
+        <input type="number" id="item_id" name="item_id" required><br><br>
+
+        <button type="button" onclick="borrowItem()">Borrow</button>
+    </form>
+
+    <div id="borrow-message"></div>
+
+    <script>
+        function borrowItem() {
+            const member_id = document.getElementById('member_id').value;
+            const item_id = document.getElementById('item_id').value;
+
+            fetch('/borrow_item', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ member_id: member_id, item_id: item_id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('borrow-message').innerText = data.message;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('borrow-message').innerText = 'An error occurred.';
+            });
+        }
+    </script>
+{% endblock %}
