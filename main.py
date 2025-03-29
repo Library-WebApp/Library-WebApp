@@ -9,7 +9,7 @@ sql_statements = [
             AuthorPublisher TEXT,
             AvailabilityStatus BOOLEAN DEFAULT 1,
             ISBN TEXT,
-            PublicationYear INTEGER,
+            PublicationYear INTEGER
         );""",
 
     """CREATE TABLE IF NOT EXISTS Person (
