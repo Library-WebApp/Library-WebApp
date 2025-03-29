@@ -115,5 +115,5 @@ def request_help():
     return jsonify({'message': 'Help request submittsed successfully', 'request_id': request_id})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
