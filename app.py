@@ -112,7 +112,7 @@ def request_help():
     request_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    return jsonify({'message': 'Help request submitted successfully', 'request_id': request_id})
+    return jsonify({'message': 'Help request submittsed successfully', 'request_id': request_id})
 
 if __name__ == '__main__':
     app.run(debug=True)
