@@ -15,10 +15,19 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Run Flask"
+runButton = "Run Flask App"
 
 [[workflows.workflow]]
 name = "Run Flask"
+author = 40898580
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"
+
+[[workflows.workflow]]
+name = "Run Flask App"
 author = 40898580
 mode = "sequential"
 
