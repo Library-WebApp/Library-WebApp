@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Ask Librarian{% endblock %}
+
+{% block content %}
+<h2>Ask a Librarian</h2>
+{% if error %}
+    <div class="error">{{ error }}</div>
+{% elif success %}
+    <div class="alert">Your request has been submitted. A librarian will contact you soon.</div>
+{% endif %}
+
+<form method="POST">
+    <div>
+        <label>Member ID:</label>
+        <input type="number" name="member_id" required>
+    </div>
+    <div>
+        <label>Question/Request:</label>
+        <textarea name="description" rows="4" required></textarea>
+    </div>
+    <button type="submit">Submit Request</button>
+</form>
+{% endblock %}

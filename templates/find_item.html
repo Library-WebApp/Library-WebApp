@@ -3,19 +3,31 @@
 {% block title %}Find Item{% endblock %}
 
 {% block content %}
-    <h1>Find Item</h1>
-    <form method="GET" action="/find_item">
-        <label for="title">Title or Author:</label>
-        <input type="text" id="title" name="title" required>
-        <button type="submit">Search</button>
-    </form>
+<h2>Find Library Items</h2>
+<form method="POST">
+    <input type="text" name="search_term" placeholder="Search by title or author..." required>
+    <button type="submit">Search</button>
+</form>
 
-    {% if items %}
-        <h2>Search Results:</h2>
-        <ul>
-            {% for item in items %}
-                <li>{{ item.Title }} by {{ item.AuthorPublisher }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+{% if items %}
+<h3>{% if request.method == 'POST' %}Search Results{% else %}All Library Items{% endif %}:</h3>
+<table>
+    <tr>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Author/Publisher</th>
+        <th>Available</th>
+    </tr>
+    {% for item in items %}
+    <tr>
+        <td>{{ item['Title'] }}</td>
+        <td>{{ item['Type'] }}</td>
+        <td>{{ item['AuthorPublisher'] }}</td>
+        <td>{{ 'Yes' if item['AvailabilityStatus'] else 'No' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No items found in the library.</p>
+{% endif %}
 {% endblock %}

@@ -100,161 +100,43 @@ sql_statements = [
 ]
 
 triggers = [
-    """CREATE TRIGGER IF NOT EXISTS ItemAvailabilityTrigger (
-            BEFORE INSERT ON BorrowingRecord
-            FOR EACH ROW
-            WHEN(SELECT AvailabilityStatus FROM Item WHERE ItemID = NEW.ItemID) != 1
-            BEGIN
-                SELECT RAISE(ABORT, 'Item is not available for borrowing.');
-            END;
-    );""",
+    """CREATE TRIGGER IF NOT EXISTS ItemAvailabilityTrigger
+       BEFORE INSERT ON BorrowingRecord
+       FOR EACH ROW
+       WHEN (SELECT AvailabilityStatus FROM Item WHERE ItemID = NEW.ItemID) != 1
+       BEGIN
+           SELECT RAISE(ABORT, 'Item is not available for borrowing.');
+       END;""",
   
-    """CREATE TRIGGER IF NOT EXISTS UpdateItemStatusOnBorrow (
-            AFTER INSERT ON BorrowingRecord
-            FOR EACH ROW
-            BEGIN
-                UPDATE Item SET AvailabilityStatus = 0 WHERE ItemID = NEW.ItemID;
-            END;
-    );""",
+    """CREATE TRIGGER IF NOT EXISTS UpdateItemStatusOnBorrow 
+       AFTER INSERT ON BorrowingRecord
+       FOR EACH ROW
+       BEGIN
+           UPDATE Item SET AvailabilityStatus = 0 WHERE ItemID = NEW.ItemID;
+       END;""",
   
-  """CREATE TRIGGER IF NOT EXISTS UpdateItemStatusOnReturn (
-            AFTER UPDATE ON BorrowingRecord
-            FOR EACH ROW
-            WHEN NEW.ReturnDate IS NOT NULL
-            BEGIN
-                UPDATE Item SET AvailabilityStatus = 1 WHERE ItemID = NEW.ItemID;
-      END;
-    );""",
+    """CREATE TRIGGER IF NOT EXISTS UpdateItemStatusOnReturn 
+       AFTER UPDATE ON BorrowingRecord
+       FOR EACH ROW
+       WHEN NEW.ReturnDate IS NOT NULL
+       BEGIN
+           UPDATE Item SET AvailabilityStatus = 1 WHERE ItemID = NEW.ItemID;
+       END;""",
   
-  """CREATE TRIGGER IF NOT EXISTS UpdateMemberStatusOnBorrow (
-            AFTER INSERT ON BorrowingRecord
-            FOR EACH ROW
-            BEGIN
-                UPDATE Member SET MembershipStatus = 'Active' WHERE MemberID = NEW.MemberID;
-            END;
-  );""",
+    """CREATE TRIGGER IF NOT EXISTS UpdateMemberStatusOnBorrow 
+       AFTER INSERT ON BorrowingRecord
+       FOR EACH ROW
+       BEGIN
+           UPDATE Member SET MembershipStatus = 'Active' WHERE MemberID = NEW.MemberID;
+       END;""",
 
-  """CREATE TRIGGER IF NOT EXISTS UpdateMemberStatusOnReturn (
-            AFTER UPDATE ON BorrowingRecord
-            FOR EACH ROW
-            WHEN NEW.ReturnDate IS NOT NULL
-            BEGIN
-                UPDATE Member SET MembershipStatus = 'Inactive' WHERE MemberID = NEW.MemberID;
-            END;
-    );""",
-
-  
-  """CREATE TRIGGER IF NOT EXISTS UpdateLibrarianStatusOnHire(
-            AFTER INSERT ON Librarian
-            FOR EACH ROW
-            BEGIN
-                UPDATE Person SET Role = 'Librarian' WHERE PersonID = NEW.LibrarianID;
-                UPDATE Librarian SET HireDate = NEW.HireDate;
-                INSERT INTO Person (PersonID, Name, Address, PhoneNumber, Email, Role) VALUES NEW.Librarian;
-            END;
-    );""",
-
-  """CREATE TRIGGER IF NOT EXISTS UpdateLibrarianStatusOnFired (
-            AFTER UPDATE ON Librarian
-            FOR EACH ROW
-            WHEN NEW.MembershipStatus = 'Fired'
-            BEGIN
-                UPDATE Person SET Role = 'Librarian' WHERE PersonID = NEW.LibrarianID;
-                UPDATE Librarian SET HireDate = NULL;
-                DELETE FROM Person WHERE PersonID = NEW.LibrarianID;
-            END;
-  );""",
-    
-  """CREATE TRIGGER IF NOT EXISTS UpdateEventAttendanceOnRegistration
-            AFTER INSERT ON EventRegistration
-            FOR EACH ROW
-            BEGIN
-                UPDATE Event SET Attendance = Event.Attendance + 1 WHERE EventID = NEW.EventID;
-            END;
-  );""",
-
-  """CREATE TRIGGER IF NOT EXISTS UpdateEventAttendanceOnUnregistration (
-            AFTER DELETE ON EventRegistration
-            FOR EACH ROW
-            BEGIN
-                UPDATE Event SET Attendance = Event.Attendance - 1 WHERE EventID = OLD.EventID;
-            END;
-  );""",
-
-  """CREATE TRIGGER IF NOT EXISTS PreventDuplicateEventRegistration (
-            BEFORE INSERT ON EventRegistration
-            FOR EACH ROW
-            WHEN EXISTS (
-              SELECT 1 FROM EventRegistration WHERE EventID = NEW.EventID AND MemberID = NEW.MemberID)
-            BEGIN
-              SELECT RAISE(ABORT, 'Member is already registered for this event.');
-            END;
-  );""",
-
-  """CREATE TRIGGER IF NOT EXISTS SetRequestDate (
-            BEFORE INSERT ON HelpRequest
-            FOR EACH ROW
-            WHEN NEW.RequestDate IS NULL
-            BEGIN
-                UPDATE HelpRequest SET NEW.RequestDate = DATE('now') WHERE RequestID = NEW.RequestID;
-            END;
-  );""",
-
-  """CREATE TRIGGER IF NOT EXISTS UpdateHelpRequestStatus (
-            AFTER INSERT ON HelpRequest
-            FOR EACH ROW
-            WHEN NEW.Status = 'Resolved'
-            BEGIN
-                UPDATE HelpRequest SET Status = 'Resolved' WHERE RequestID = NEW.RequestID;
-            END;
-  );""",
-
-  """CREATE TRIGGER EnforceLibrarianMinSalary (
-            BEFORE INSERT ON Librarian
-            FOR EACH ROW
-            WHEN NEW.Salary < 80000
-            BEGIN
-                SELECT RAISE(ABORT, 'Librarian salary must be at least 80,000.');
-            END;
-  );""",
-  
-  """CREATE TRIGGER SetJoinDate (
-            BEFORE INSERT ON Member
-            FOR EACH ROW
-            WHEN NEW.JoinDate IS NULL
-            BEGIN
-                SET NEW.JoinDate = DATE('now');
-            END;
-  );""",
-  
-  """CREATE TRIGGER SetDueDate (
-            BEFORE INSERT ON BorrowingRecord
-            FOR EACH ROW
-            WHEN NEW.DueDate IS NULL
-            BEGIN
-                UPDATE BorrowingRecord SET DueDate = DATE('now', '+30 days') WHERE RecordID = NEW.RecordID;
-              END;
-  );""",
-  
-    """CREATE TRIGGER IF NOT EXISTS CheckRoomCapacity (
-            BEFORE INSERT ON EventRegistration
-            FOR EACH ROW
-            WHEN (SELECT Capacity FROM LibraryRoom WHERE RoomID = NEW.RoomID) <= (SELECT Attendance FROM Event WHERE EventID = NEW.EventID)
-            BEGIN
-                SELECT RAISE(ABORT, 'Event has reached maximum capacity.');
-            END;
-    );""",
-    
-    """CREATE TRIGGER IF NOT EXISTS ProcessDonation (
-            AFTER INSERT ON Donation
-            FOR EACH ROW
-            WHEN NEW.ItemID IS NULL
-            BEGIN
-                Insert INTO Item (Title, Type, AuthorPublisher, AvailabilityStatus, ISBN, PublicationYear)
-                VALUES (NEW.ItemTitle, NEW.ItemType, NEW.AuthorPublisher, 1, NEW.ISBN, NEW.PublicationYear);
-                UPDATE Donation SET ItemID = (SELECT LAST_INSERT_ROWID() FROM Item) WHERE DonationID = NEW.DonationID;
-            END;
-      );"""    
+    """CREATE TRIGGER IF NOT EXISTS UpdateMemberStatusOnReturn 
+       AFTER UPDATE ON BorrowingRecord
+       FOR EACH ROW
+       WHEN NEW.ReturnDate IS NOT NULL
+       BEGIN
+           UPDATE Member SET MembershipStatus = 'Inactive' WHERE MemberID = NEW.MemberID;
+       END;"""
 ]
 
 
@@ -346,81 +228,6 @@ def add_help_request(conn, HelpRequest):
     cur.execute(sql, HelpRequest)
     conn.commit()
     return cur.lastrowid
-
-
-    
-# Library Management Functions
-def find_item(conn, title):
-    sql = '''SELECT * FROM Item WHERE Title LIKE ? OR AuthorPublisher LIKE ?'''
-    cur = conn.cursor()
-    cur.execute(sql, (f'%{title}%', f'%{title}%'))
-    return cur.fetchall()
-
-def borrow_item(conn, member_id, item_id):
-    sql = '''INSERT INTO BorrowingRecord (MemberID, ItemID, DueDate) 
-             VALUES (?, ?, date('now', '+30 days'))'''
-    cur = conn.cursor()
-    cur.execute(sql, (member_id, item_id))
-    conn.commit()
-    return cur.lastrowid
-
-
-def return_item(conn, record_id):
-    sql = '''UPDATE BorrowingRecord 
-             SET ReturnDate = date('now') 
-             WHERE RecordID = ?'''
-    cur = conn.cursor()
-    cur.execute(sql, (record_id,))
-    conn.commit()
-
-
-def donate_item(conn, donor_id, title, item_type, author_publisher):
-    sql = '''INSERT INTO Donation (DonorID, ItemTitle, ItemType, AuthorPublisher, DateReceived) 
-             VALUES (?, ?, ?, ?, date('now'))'''
-    cur = conn.cursor()
-    cur.execute(sql, (donor_id, title, item_type, author_publisher))
-    conn.commit()
-    return cur.lastrowid
-
-
-
-def find_events(conn, search_term=None):
-    cur = conn.cursor()
-    if search_term:
-        sql = '''SELECT * FROM Event 
-                 WHERE EventName LIKE ? OR EventDate >= date('now')'''
-        cur.execute(sql, (f'%{search_term}%',))
-    else:
-        sql = '''SELECT * FROM Event WHERE EventDate >= date('now')'''
-        cur.execute(sql)
-    return cur.fetchall()
-
-
-
-def register_for_event(conn, member_id, event_id):
-    sql = '''INSERT INTO EventRegistration (EventID, MemberID) VALUES (?, ?)'''
-    cur = conn.cursor()
-    cur.execute(sql, (event_id, member_id))
-    conn.commit()
-    return cur.lastrowid
-
-
-def volunteer_signup(conn, name, email, phone):
-    sql = '''INSERT INTO Volunteer (VolunteerID, JoinDate, MembershipStatus) VALUES (?, ?, ?)'''
-    cur = conn.cursor()
-    cur.execute(sql, (name, email, phone))
-    conn.commit()
-    return cur.lastrowid
-
-
-def request_help(conn, member_id, description):
-    sql = '''INSERT INTO HelpRequest (MemberID, Description) VALUES (?, ?)'''
-    cur = conn.cursor()
-    cur.execute(sql, (member_id, description))
-    conn.commit()
-    return cur.lastrowid
-
-
 
 # Sample data population
 def populate_sample_data(conn):
@@ -608,23 +415,40 @@ try:
         # create a cursor
         cursor = conn.cursor()
 
-        # execute statements
+        # execute table creation statements
         for statement in sql_statements:
-            cursor.execute(statement)
+            try:
+                cursor.execute(statement)
+            except sqlite3.OperationalError as e:
+                print(f"Warning: Could not execute statement - {e}")
+
+        # execute trigger creation statements
+        for trigger in triggers:
+            try:
+                cursor.execute(trigger)
+            except sqlite3.OperationalError as e:
+                print(f"Warning: Could not create trigger - {e}")
 
         # commit the changes
         conn.commit()
+        print("Database schema created successfully with tables and triggers.")
 
-        print("Tables created successfully.")
-except sqlite3.OperationalError as e:
-    print("Failed to create tables:", e)
+except sqlite3.Error as e:
+    print("Failed to initialize database:", e)
 
 # Populate the database with sample data
 try:
     with sqlite3.connect('354_mini_project.db') as conn:
-        populate_sample_data(conn)
-        print("Sample data inserted successfully.")
+        # First check if data already exists to avoid duplicates
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM Item")
+        item_count = cursor.fetchone()[0]
+
+        if item_count == 0:
+            populate_sample_data(conn)
+            print("Sample data inserted successfully.")
+        else:
+            print("Database already contains data - skipping sample data insertion.")
+
 except sqlite3.Error as e:
-    print("Error inserting sample data:", e)
-
-
+    print("Error working with sample data:", e)

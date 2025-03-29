@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Register for Event{% endblock %}
+
+{% block content %}
+<h2>Register for an Event</h2>
+{% if error %}
+    <div class="error">{{ error }}</div>
+{% elif success %}
+    <div class="alert">Event registration successful!</div>
+{% endif %}
+
+<form method="POST">
+    <div>
+        <label>Event ID:</label>
+        <input type="number" name="event_id" required>
+    </div>
+    <div>
+        <label>Member ID:</label>
+        <input type="number" name="member_id" required>
+    </div>
+    <button type="submit">Register</button>
+</form>
+{% endblock %}
