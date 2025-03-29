@@ -4,6 +4,10 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return jsonify({"message": "Welcome to the Library Management System API"})
+
 # Database connection helper function
 def get_db_connection():
     conn = sqlite3.connect('354_mini_project.db')
