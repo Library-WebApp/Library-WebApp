@@ -15,7 +15,6 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Run Flask App"
 
 [[workflows.workflow]]
 name = "Run Flask"
@@ -38,3 +37,4 @@ args = "python app.py"
 [[ports]]
 localPort = 5000
 externalPort = 80
+exposeLocalhost = true

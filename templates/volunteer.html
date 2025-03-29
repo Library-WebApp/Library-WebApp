@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Volunteer{% endblock %}
+
+{% block content %}
+<h2>Volunteer Application</h2>
+{% if error %}
+    <div class="error">{{ error }}</div>
+{% elif success %}
+    <div class="alert">Thank you for applying to volunteer! We'll contact you soon.</div>
+{% endif %}
+
+<form method="POST">
+    <div>
+        <label>Full Name:</label>
+        <input type="text" name="name" required>
+    </div>
+    <div>
+        <label>Email:</label>
+        <input type="email" name="email" required>
+    </div>
+    <div>
+        <label>Phone Number:</label>
+        <input type="tel" name="phone" required>
+    </div>
+    <button type="submit">Apply to Volunteer</button>
+</form>
+{% endblock %}
