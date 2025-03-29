@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Return Item{% endblock %}
+
+{% block content %}
+    <h1>Return Item</h1>
+    <form id="return-form">
+        <label for="record_id">Record ID:</label>
+        <input type="number" id="record_id" name="record_id" required><br><br>
+
+        <button type="button" onclick="returnItem()">Return</button>
+    </form>
+
+    <div id="return-message"></div>
+
+    <script>
+        function returnItem() {
+            const record_id = document.getElementById('record_id').value;
+
+            fetch('/return_item', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ record_id: record_id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('return-message').innerText = data.message;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('return-message').innerText = 'An error occurred.';
+            });
+        }
+    </script>
+{% endblock %}
