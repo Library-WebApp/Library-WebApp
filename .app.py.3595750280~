@@ -115,8 +115,6 @@ def register_for_event():
     conn.close()
     return jsonify({'message': 'Registered for event successfully', 'registration_id': registration_id})
 
-
-
 @app.route('/volunteer_signup', methods=['POST'])
 def volunteer_signup():
     data = request.json
