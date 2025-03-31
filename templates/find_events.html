@@ -3,21 +3,242 @@
 {% block title %}Find Events{% endblock %}
 
 {% block content %}
-<h2>Upcoming Events</h2>
-<table>
-    <tr>
-        <th>Event Name</th>
-        <th>Date</th>
-        <th>Location</th>
-        <th>Attendance</th>
-    </tr>
-    {% for event in events %}
-    <tr>
-        <td>{{ event['EventName'] }}</td>
-        <td>{{ event['EventDate'] }}</td>
-        <td>Room {{ event['RoomID'] }}</td>
-        <td>{{ event['Attendance'] }}/{{ event['Attendance']|int + 20 }}</td>
-    </tr>
-    {% endfor %}
-</table>
+<h2>Library Events</h2>
+
+{% if error %}
+    <div class="error">{{ error }}</div>
+{% elif success %}
+    <div class="success">{{ success }}</div>
+{% endif %}
+
+<div class="member-section">
+    <h3>Select Your Profile</h3>
+    <form method="POST" id="memberForm">
+        <div class="member-grid">
+            {% for member in members %}
+            <div class="member-card {% if selected_member == member['PersonID'] %}selected{% endif %}">
+                <input type="radio" id="member_{{ member['PersonID'] }}" name="member_id" 
+                       value="{{ member['PersonID'] }}" 
+                       {% if selected_member == member['PersonID'] %}checked{% endif %}>
+                <label for="member_{{ member['PersonID'] }}">
+                    <span class="member-name">{{ member['Name'] }}</span>
+                    <span class="member-id">ID: {{ member['PersonID'] }}</span>
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn-select">Select Profile</button>
+    </form>
+</div>
+
+{% if selected_member %}
+<div class="search-section">
+    <h3>Search Events</h3>
+    <form method="POST" id="searchForm">
+        <input type="hidden" name="member_id" value="{{ selected_member }}">
+        <input type="text" name="search_term" placeholder="Search events..." 
+               value="{{ search_term if search_term }}" class="search-input">
+        <button type="submit" class="btn-search">Search</button>
+    </form>
+</div>
+{% endif %}
+
+{% if events %}
+<div class="events-section">
+    <h3>{% if search_term %}Search Results{% else %}All Events{% endif %}</h3>
+    <table class="events-table">
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Location</th>
+                <th>Availability</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td>{{ event['EventName'] }}</td>
+                <td>{{ event['EventDate'] }}</td>
+                <td>Room {{ event['RoomID'] }}</td>
+                <td>{{ event['Attendance'] }}/{{ event['MaxCapacity'] if event['MaxCapacity'] else event['Attendance'] + 20 }}</td>
+                <td>
+                    {% if event['IsRegistered'] %}
+                    <div class="registration-actions">
+                        <span class="status-registered">Registered ✓</span>
+                        <form method="POST" class="unregister-form">
+                            <input type="hidden" name="member_id" value="{{ selected_member }}">
+                            <input type="hidden" name="event_id" value="{{ event['EventID'] }}">
+                            <input type="hidden" name="search_term" value="{{ search_term if search_term }}">
+                            <input type="hidden" name="action" value="unregister">
+                            <button type="submit" class="btn-unregister">Unregister</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <form method="POST" class="register-form">
+                        <input type="hidden" name="member_id" value="{{ selected_member }}">
+                        <input type="hidden" name="event_id" value="{{ event['EventID'] }}">
+                        <input type="hidden" name="search_term" value="{{ search_term if search_term }}">
+                        <input type="hidden" name="action" value="register">
+                        <button type="submit" class="btn-register">Register</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="no-events">No events found{% if search_term %} matching "{{ search_term }}"{% endif %}.</p>
+{% endif %}
+
+<style>
+/* Member Selection Styles */
+.member-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.member-card {
+    background: white;
+    border-radius: 5px;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+.member-card.selected {
+    background: #e7f1ff;
+    border-left: 4px solid #0066cc;
+}
+.member-card input[type="radio"] {
+    display: none;
+}
+.member-card label {
+    display: block;
+    cursor: pointer;
+}
+.member-name {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+.member-id {
+    display: block;
+    font-size: 0.9em;
+    color: #666;
+}
+.btn-select {
+    background: #0066cc;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Search Styles */
+.search-section {
+    margin-bottom: 25px;
+}
+.search-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 300px;
+    max-width: 100%;
+}
+.btn-search {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+/* Events Table Styles */
+.events-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+.events-table th, .events-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.events-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+.registration-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.status-registered {
+    color: #28a745;
+    font-weight: bold;
+}
+.btn-register {
+    background: #ffc107;
+    color: #212529;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.btn-unregister {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.register-form, .unregister-form {
+    margin: 0;
+    display: inline;
+}
+
+/* Message Styles */
+.error {
+    color: #dc3545;
+    background: #f8d7da;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+.success {
+    color: #28a745;
+    background: #d4edda;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+.no-events {
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 20px;
+}
+</style>
+
+<script>
+// Submit form when member is selected
+document.querySelectorAll('.member-card input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.getElementById('memberForm').submit();
+    });
+});
+</script>
 {% endblock %}

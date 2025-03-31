@@ -3,22 +3,212 @@
 {% block title %}Ask Librarian{% endblock %}
 
 {% block content %}
-<h2>Ask a Librarian</h2>
-{% if error %}
-    <div class="error">{{ error }}</div>
-{% elif success %}
-    <div class="alert">Your request has been submitted. A librarian will contact you soon.</div>
-{% endif %}
+<div class="help-container">
+    <h2>Ask a Librarian</h2>
 
-<form method="POST">
-    <div>
-        <label>Member ID:</label>
-        <input type="number" name="member_id" required>
+    {% if error %}
+        <div class="error-message">{{ error }}</div>
+    {% elif success %}
+        <div class="success-message">{{ success }}</div>
+    {% endif %}
+
+    <div class="member-selection">
+        <h3>Select Your Profile</h3>
+        <form method="POST" id="memberForm">
+            <div class="member-grid">
+                {% for member in members %}
+                <div class="member-card {% if selected_member == member['PersonID'] %}selected{% endif %}">
+                    <input type="radio" id="member_{{ member['PersonID'] }}" name="member_id" 
+                           value="{{ member['PersonID'] }}" 
+                           {% if selected_member == member['PersonID'] %}checked{% endif %}>
+                    <label for="member_{{ member['PersonID'] }}">
+                        <span class="member-name">{{ member['Name'] }}</span>
+                        <span class="member-id">ID: {{ member['PersonID'] }}</span>
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn-select">Select Profile</button>
+        </form>
     </div>
-    <div>
-        <label>Question/Request:</label>
-        <textarea name="description" rows="4" required></textarea>
+
+    {% if selected_member %}
+    <div class="request-form">
+        <h3>Submit New Request</h3>
+        <form method="POST">
+            <input type="hidden" name="member_id" value="{{ selected_member }}">
+            <div class="form-group">
+                <label for="description">Your Question/Request:</label>
+                <textarea id="description" name="description" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn-submit">Submit Request</button>
+        </form>
     </div>
-    <button type="submit">Submit Request</button>
-</form>
+
+    {% if previous_requests %}
+    <div class="previous-requests">
+        <h3>Your Previous Requests</h3>
+        <div class="request-list">
+            {% for request in previous_requests %}
+            <div class="request-card">
+                <div class="request-header">
+                    <span class="request-name">{{ request['Name'] }}</span>
+                    <span class="request-date">{{ request['RequestDate'] }}</span>
+                </div>
+                <div class="request-content">
+                    {{ request['Description'] }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+<style>
+.help-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Member Selection Styles */
+.member-selection {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.member-card {
+    background: white;
+    border-radius: 5px;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+.member-card.selected {
+    background: #e7f1ff;
+    border-left: 4px solid #0066cc;
+}
+.member-card input[type="radio"] {
+    display: none;
+}
+.member-card label {
+    display: block;
+    cursor: pointer;
+}
+.member-name {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+.member-id {
+    display: block;
+    font-size: 0.9em;
+    color: #666;
+}
+.btn-select {
+    background: #0066cc;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Request Form Styles */
+.request-form {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-height: 100px;
+}
+.btn-submit {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Previous Requests Styles */
+.previous-requests {
+    margin-top: 30px;
+}
+.request-list {
+    margin-top: 15px;
+}
+.request-card {
+    background: white;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.request-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+}
+.request-name {
+    font-weight: bold;
+}
+.request-date {
+    color: #666;
+    font-size: 0.9em;
+}
+.request-content {
+    line-height: 1.5;
+}
+
+/* Message Styles */
+.error-message {
+    color: #dc3545;
+    background: #f8d7da;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+.success-message {
+    color: #28a745;
+    background: #d4edda;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+</style>
+
+<script>
+// Submit form when member is selected
+document.querySelectorAll('.member-card input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.getElementById('memberForm').submit();
+    });
+});
+</script>
 {% endblock %}

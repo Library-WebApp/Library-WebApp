@@ -4,17 +4,91 @@
 
 {% block content %}
 <h2>Return an Item</h2>
+
 {% if error %}
     <div class="error">{{ error }}</div>
 {% elif success %}
-    <div class="alert">Item returned successfully!</div>
+    <div class="success">{{ success }}</div>
 {% endif %}
 
+<h3>Select Your Member Profile</h3>
 <form method="POST">
-    <div>
-        <label>Borrowing Record ID:</label>
-        <input type="number" name="record_id" required>
+    <div class="member-selection">
+        {% for member in members %}
+        <div class="member-option">
+            <input type="radio" id="member_{{ member['PersonID'] }}" name="member_id" 
+                   value="{{ member['PersonID'] }}" 
+                   {% if selected_member == member['PersonID'] %}checked{% endif %}
+                   required>
+            <label for="member_{{ member['PersonID'] }}">{{ member['Name'] }} (ID: {{ member['PersonID'] }})</label>
+        </div>
+        {% endfor %}
+        <button type="submit" name="action" value="select_member">Show My Borrowed Items</button>
     </div>
-    <button type="submit">Return Item</button>
+
+    {% if borrowed_items %}
+    <h3>Your Borrowed Items</h3>
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Borrow Date</th>
+            <th>Due Date</th>
+            <th>Action</th>
+        </tr>
+        {% for item in borrowed_items %}
+        <tr>
+            <td>{{ item['Title'] }}</td>
+            <td>{{ item['BorrowDate'] }}</td>
+            <td>{{ item['DueDate'] }}</td>
+            <td>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="record_id" value="{{ item['RecordID'] }}">
+                    <button type="submit" class="return-btn">Return</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% elif selected_member %}
+    <p>You have no items currently borrowed.</p>
+    {% endif %}
 </form>
+
+<style>
+.member-selection {
+    margin: 20px 0;
+}
+.member-option {
+    margin: 10px 0;
+}
+.error {
+    color: red;
+}
+.success {
+    color: green;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    background-color: #f2f2f2;
+}
+.return-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+.return-btn:hover {
+    background-color: #45a049;
+}
+</style>
 {% endblock %}

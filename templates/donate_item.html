@@ -4,30 +4,92 @@
 
 {% block content %}
 <h2>Donate an Item</h2>
+
 {% if error %}
     <div class="error">{{ error }}</div>
 {% elif success %}
-    <div class="alert">Thank you for your donation!</div>
+    <div class="success">Thank you for your donation!</div>
 {% endif %}
 
 <form method="POST">
-    <div>
-        <label>Donor ID:</label>
-        <input type="number" name="donor_id" required>
+    <div class="form-group">
+        <h3>Select Donor</h3>
+        <div class="donor-selection">
+            {% for donor in donors %}
+            <div class="donor-option">
+                <input type="radio" id="donor_{{ donor['PersonID'] }}" name="donor_id" 
+                       value="{{ donor['PersonID'] }}" required>
+                <label for="donor_{{ donor['PersonID'] }}">{{ donor['Name'] }} (ID: {{ donor['PersonID'] }})</label>
+            </div>
+            {% endfor %}
+        </div>
     </div>
-    <div>
-        <label>Item Title:</label>
-        <input type="text" name="item_title" required>
+
+    <div class="form-group">
+        <label for="item_title">Item Title:</label>
+        <input type="text" id="item_title" name="item_title" required>
     </div>
-    <div>
-        <label>Item Type:</label>
-        <select name="item_type" required>
+
+    <div class="form-group">
+        <label for="item_type">Item Type:</label>
+        <select id="item_type" name="item_type" required>
+            <option value="">Select a type...</option>
             <option value="Book">Book</option>
             <option value="DVD">DVD</option>
             <option value="Magazine">Magazine</option>
+            <option value="CD">CD</option>
+            <option value="Audiobook">Audiobook</option>
             <option value="Other">Other</option>
         </select>
     </div>
-    <button type="submit">Donate Item</button>
+
+    <button type="submit" class="submit-btn">Donate Item</button>
 </form>
+
+<style>
+.error {
+    color: red;
+    margin: 10px 0;
+}
+.success {
+    color: green;
+    margin: 10px 0;
+}
+.form-group {
+    margin: 20px 0;
+}
+.donor-selection {
+    margin: 10px 0;
+}
+.donor-option {
+    margin: 8px 0;
+    padding: 8px;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+input[type="text"], select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.submit-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.submit-btn:hover {
+    background-color: #45a049;
+}
+</style>
 {% endblock %}

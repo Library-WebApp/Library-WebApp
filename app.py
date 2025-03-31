@@ -81,47 +81,257 @@ def borrow_item():
 # Return Item
 @app.route('/return-item', methods=['GET', 'POST'])
 def return_item():
+    conn = get_db_connection()
+
+    # Get all members for display
+    members = conn.execute("""
+        SELECT p.PersonID, p.Name 
+        FROM Person p
+        JOIN Member m ON p.PersonID = m.MemberID
+        WHERE p.Role = 'Member'
+    """).fetchall()
+
     if request.method == 'POST':
-        record_id = request.form['record_id']
-        try:
-            conn = get_db_connection()
-            return_date = datetime.now().strftime('%Y-%m-%d')
-            conn.execute('UPDATE BorrowingRecord SET ReturnDate = ? WHERE RecordID = ?',
-                            (return_date, record_id))
-            conn.commit()
-            conn.close()
-            return redirect(url_for('return_item', success=True))
-        except sqlite3.Error as e:
-            return render_template('return_item.html', error=str(e))
-    return render_template('return_item.html')
+        # Handle member selection or item return
+        if 'member_id' in request.form:
+            # Member selected - show their borrowed items
+            member_id = request.form['member_id']
+            borrowed_items = conn.execute("""
+                SELECT br.RecordID, i.Title, i.ItemID, br.BorrowDate, br.DueDate
+                FROM BorrowingRecord br
+                JOIN Item i ON br.ItemID = i.ItemID
+                WHERE br.MemberID = ? AND br.ReturnDate IS NULL
+            """, (member_id,)).fetchall()
+
+            return render_template('return_item.html', 
+                                 members=members,
+                                 borrowed_items=borrowed_items,
+                                 selected_member=member_id)
+
+        elif 'record_id' in request.form:
+            # Item return submitted
+            record_id = request.form['record_id']
+            try:
+                return_date = datetime.now().strftime('%Y-%m-%d')
+
+                # Get item ID from the borrowing record
+                record = conn.execute("""
+                    SELECT ItemID FROM BorrowingRecord WHERE RecordID = ?
+                """, (record_id,)).fetchone()
+
+                if record:
+                    # Update borrowing record
+                    conn.execute("""
+                        UPDATE BorrowingRecord 
+                        SET ReturnDate = ? 
+                        WHERE RecordID = ?
+                    """, (return_date, record_id))
+
+                    # Update item availability
+                    conn.execute("""
+                        UPDATE Item 
+                        SET AvailabilityStatus = 1 
+                        WHERE ItemID = ?
+                    """, (record['ItemID'],))
+
+                    conn.commit()
+
+                # Get member ID to show their remaining borrowed items
+                member_record = conn.execute("""
+                    SELECT MemberID FROM BorrowingRecord WHERE RecordID = ?
+                """, (record_id,)).fetchone()
+
+                if member_record:
+                    borrowed_items = conn.execute("""
+                        SELECT br.RecordID, i.Title, i.ItemID, br.BorrowDate, br.DueDate
+                        FROM BorrowingRecord br
+                        JOIN Item i ON br.ItemID = i.ItemID
+                        WHERE br.MemberID = ? AND br.ReturnDate IS NULL
+                    """, (member_record['MemberID'],)).fetchall()
+
+                conn.close()
+                return render_template('return_item.html',
+                                    members=members,
+                                    borrowed_items=borrowed_items,
+                                    selected_member=member_record['MemberID'],
+                                    success="Item returned successfully!")
+            except sqlite3.Error as e:
+                return render_template('return_item.html', 
+                                    members=members,
+                                    error=str(e))
+
+    conn.close()
+    return render_template('return_item.html', members=members)
 
 # Donate Item
 @app.route('/donate-item', methods=['GET', 'POST'])
 def donate_item():
+    conn = get_db_connection()
+
+    # Get all potential donors (people who aren't necessarily members)
+    donors = conn.execute("""
+        SELECT PersonID, Name FROM Person
+            WHERE Role IN ('Member', 'Volunteer', 'Donor')
+            ORDER BY Name
+        """).fetchall()
+
     if request.method == 'POST':
         donor_id = request.form['donor_id']
         item_title = request.form['item_title']
         item_type = request.form['item_type']
+
         try:
-            conn = get_db_connection()
-            conn.execute('INSERT INTO Donation (DonorID, ItemTitle, ItemType, DateReceived) '
-                         'VALUES (?, ?, ?, ?)',
-                        (donor_id, item_title, item_type, datetime.now().strftime('%Y-%m-%d')))
+            # First add the item to the Item table
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO Item (Title, Type, AvailabilityStatus)
+                    VALUES (?, ?, 1)
+                """, (item_title, item_type))
+            item_id = cur.lastrowid
+
+            # Then record the donation
+            cur.execute("""
+                INSERT INTO Donation (DonorID, ItemID, ItemTitle, ItemType, DateReceived)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (donor_id, item_id, item_title, item_type, datetime.now().strftime('%Y-%m-%d')))
+
             conn.commit()
             conn.close()
             return redirect(url_for('donate_item', success=True))
         except sqlite3.Error as e:
-            return render_template('donate_item.html', error=str(e))
-    return render_template('donate_item.html')
+            return render_template('donate_item.html', donors=donors, error=str(e))
 
-# Find Events
+    conn.close()
+    return render_template('donate_item.html', donors=donors)
+
+#Find Event
 @app.route('/find-events', methods=['GET', 'POST'])
 def find_events():
     conn = get_db_connection()
-    events = conn.execute('SELECT * FROM Event').fetchall()
-    conn.close()
-    return render_template('find_events.html', events=events)
 
+    # Get all members for selection
+    members = conn.execute("""
+        SELECT p.PersonID, p.Name 
+        FROM Person p
+        JOIN Member m ON p.PersonID = m.MemberID
+        WHERE p.Role = 'Member'
+        ORDER BY p.Name
+    """).fetchall()
+
+    if request.method == 'POST':
+        member_id = request.form.get('member_id')
+        search_term = request.form.get('search_term', '')
+        action = request.form.get('action')
+
+        if member_id:
+            # Build query based on search term
+            query = """
+                SELECT e.*, 
+                       EXISTS(SELECT 1 FROM EventRegistration er 
+                              WHERE er.EventID = e.EventID AND er.MemberID = ?) AS IsRegistered
+                FROM Event e
+                WHERE e.EventName LIKE ? OR e.EventDate LIKE ?
+                ORDER BY e.EventDate
+            """
+            events = conn.execute(query, 
+                                (member_id, 
+                                 f'%{search_term}%', 
+                                 f'%{search_term}%')).fetchall()
+
+            # Handle registration/unregistration
+            if 'event_id' in request.form:
+                event_id = request.form['event_id']
+                try:
+                    if action == 'register':
+                        # Check if already registered
+                        existing_reg = conn.execute("""
+                            SELECT 1 FROM EventRegistration 
+                            WHERE EventID = ? AND MemberID = ?
+                        """, (event_id, member_id)).fetchone()
+
+                        if not existing_reg:
+                            # Register for event
+                            conn.execute("""
+                                INSERT INTO EventRegistration (EventID, MemberID)
+                                VALUES (?, ?)
+                            """, (event_id, member_id))
+
+                            # Update attendance count
+                            conn.execute("""
+                                UPDATE Event 
+                                SET Attendance = Attendance + 1 
+                                WHERE EventID = ?
+                            """, (event_id,))
+
+                            conn.commit()
+
+                            # Refresh events list
+                            events = conn.execute(query, 
+                                                (member_id, 
+                                                 f'%{search_term}%', 
+                                                 f'%{search_term}%')).fetchall()
+
+                            return render_template('find_events.html',
+                                                members=members,
+                                                events=events,
+                                                selected_member=member_id,
+                                                search_term=search_term,
+                                                success="Successfully registered for event!")
+
+                    elif action == 'unregister':
+                        # Check if registered
+                        existing_reg = conn.execute("""
+                            SELECT 1 FROM EventRegistration 
+                            WHERE EventID = ? AND MemberID = ?
+                        """, (event_id, member_id)).fetchone()
+
+                        if existing_reg:
+                            # Unregister from event
+                            conn.execute("""
+                                DELETE FROM EventRegistration
+                                WHERE EventID = ? AND MemberID = ?
+                            """, (event_id, member_id))
+
+                            # Update attendance count
+                            conn.execute("""
+                                UPDATE Event 
+                                SET Attendance = Attendance - 1 
+                                WHERE EventID = ?
+                            """, (event_id,))
+
+                            conn.commit()
+
+                            # Refresh events list
+                            events = conn.execute(query, 
+                                                (member_id, 
+                                                 f'%{search_term}%', 
+                                                 f'%{search_term}%')).fetchall()
+
+                            return render_template('find_events.html',
+                                                members=members,
+                                                events=events,
+                                                selected_member=member_id,
+                                                search_term=search_term,
+                                                success="Successfully unregistered from event!")
+
+                except sqlite3.Error as e:
+                    return render_template('find_events.html',
+                                        members=members,
+                                        selected_member=member_id,
+                                        search_term=search_term,
+                                        error=str(e))
+
+            return render_template('find_events.html', 
+                                members=members,
+                                events=events,
+                                selected_member=member_id,
+                                search_term=search_term)
+
+    # Default GET request - show all events
+    events = conn.execute("SELECT * FROM Event ORDER BY EventDate").fetchall()
+    conn.close()
+    return render_template('find_events.html', members=members, events=events)
+    
 # Register for Event
 @app.route('/register-event', methods=['GET', 'POST'])
 def register_event():
@@ -164,19 +374,68 @@ def volunteer():
 # Ask for Help
 @app.route('/ask-help', methods=['GET', 'POST'])
 def ask_help():
+    conn = get_db_connection()
+
+    # Get all members for selection
+    members = conn.execute("""
+        SELECT p.PersonID, p.Name 
+        FROM Person p
+        JOIN Member m ON p.PersonID = m.MemberID
+        WHERE p.Role = 'Member'
+        ORDER BY p.Name
+    """).fetchall()
+
     if request.method == 'POST':
-        member_id = request.form['member_id']
-        description = request.form['description']
+        member_id = request.form.get('member_id')
+        description = request.form.get('description')
+
         try:
-            conn = get_db_connection()
-            conn.execute('INSERT INTO HelpRequest (MemberID, Description) VALUES (?, ?)',
-                         (member_id, description))
-            conn.commit()
-            conn.close()
-            return redirect(url_for('ask_help', success=True))
+            if member_id and not description:
+                # Just member selected - show their previous requests
+                previous_requests = conn.execute("""
+                    SELECT h.RequestID, h.Description, h.RequestDate, p.Name
+                    FROM HelpRequest h
+                    JOIN Person p ON h.MemberID = p.PersonID
+                    WHERE h.MemberID = ?
+                    ORDER BY h.RequestDate DESC
+                """, (member_id,)).fetchall()
+
+                return render_template('ask_help.html',
+                                    members=members,
+                                    selected_member=member_id,
+                                    previous_requests=previous_requests)
+
+            elif member_id and description:
+                # New request submitted
+                conn.execute("""
+                    INSERT INTO HelpRequest (MemberID, Description, RequestDate)
+                    VALUES (?, ?, ?)
+                """, (member_id, description, datetime.now().strftime('%Y-%m-%d')))
+
+                conn.commit()
+
+                # Get updated request list
+                previous_requests = conn.execute("""
+                    SELECT h.RequestID, h.Description, h.RequestDate, p.Name
+                    FROM HelpRequest h
+                    JOIN Person p ON h.MemberID = p.PersonID
+                    WHERE h.MemberID = ?
+                    ORDER BY h.RequestDate DESC
+                """, (member_id,)).fetchall()
+
+                return render_template('ask_help.html',
+                                    members=members,
+                                    selected_member=member_id,
+                                    previous_requests=previous_requests,
+                                    success="Your request has been submitted!")
+
         except sqlite3.Error as e:
-            return render_template('ask_help.html', error=str(e))
-    return render_template('ask_help.html')
+            return render_template('ask_help.html',
+                                members=members,
+                                error=str(e))
+
+    conn.close()
+    return render_template('ask_help.html', members=members)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
