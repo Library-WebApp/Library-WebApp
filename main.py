@@ -183,7 +183,7 @@ def add_volunteer(conn, Volunteer):
     return cur.lastrowid
 
 def add_event(conn, Event):
-    sql = '''INSERT INTO Event (EventName, EventDate, Attendance, MaxCapacity RoomID) VALUES (?, ?, ?, ?, ?)'''
+    sql = '''INSERT INTO Event (EventName, EventDate, Attendance, MaxCapacity, RoomID) VALUES (?, ?, ?, ?, ?)'''
     cur = conn.cursor()
     cur.execute(sql, Event)
     conn.commit()

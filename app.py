@@ -260,6 +260,23 @@ def find_events():
                 event_id = request.form['event_id']
                 try:
                     if action == 'register':
+                        # Check if event is full
+                        event = conn.execute("""
+                            SELECT Attendance, MaxCapacity FROM Event WHERE EventID = ?
+                        """, (event_id,)).fetchone()
+                        
+                        if event['Attendance'] >= event['MaxCapacity']:
+                            events = conn.execute(query, 
+                                                (member_id, 
+                                                 f'%{search_term}%', 
+                                                 f'%{search_term}%')).fetchall()
+                            return render_template('find_events.html',
+                                                members=members,
+                                                events=events,
+                                                selected_member=member_id,
+                                                search_term=search_term,
+                                                error="This event has reached maximum capacity.")
+                        
                         # Check if already registered
                         existing_reg = conn.execute("""
                             SELECT 1 FROM EventRegistration 
@@ -344,8 +361,12 @@ def find_events():
                                 selected_member=member_id,
                                 search_term=search_term)
 
-    # Default GET request - show all events
-    events = conn.execute("SELECT * FROM Event ORDER BY EventDate").fetchall()
+    # Default GET request
+    events = conn.execute("""
+        SELECT *, (Attendance >= MaxCapacity) AS IsFull 
+        FROM Event 
+        ORDER BY EventDate
+    """).fetchall()
     conn.close()
     return render_template('find_events.html', members=members, events=events)
     
