@@ -11,68 +11,173 @@
     <div class="success">Thank you for your donation!</div>
 {% endif %}
 
-<form method="POST">
-    <div class="form-group">
-        <h3>Select Donor</h3>
-        <div class="donor-selection">
+<!-- Donor Selection -->
+{% if not selected_donor %}
+<div class="donor-section">
+    <h3>Select Donor</h3>
+    <form method="POST" id="donorForm">
+        <div class="donor-grid">
             {% for donor in donors %}
-            <div class="donor-option">
+            <div class="donor-card {% if selected_donor == donor['PersonID'] %}selected{% endif %}">
                 <input type="radio" id="donor_{{ donor['PersonID'] }}" name="donor_id" 
-                       value="{{ donor['PersonID'] }}" required>
-                <label for="donor_{{ donor['PersonID'] }}">{{ donor['Name'] }} (ID: {{ donor['PersonID'] }})</label>
+                       value="{{ donor['PersonID'] }}" 
+                       {% if selected_donor == donor['PersonID'] %}checked{% endif %}>
+                <label for="donor_{{ donor['PersonID'] }}">
+                    <span class="donor-name">{{ donor['Name'] }}</span>
+                    <span class="donor-id">ID: {{ donor['PersonID'] }}</span>
+                </label>
             </div>
             {% endfor %}
         </div>
-    </div>
+        <button type="submit" class="btn-select">Select Donor</button>
+    </form>
+</div>
+{% endif %}
 
-    <div class="form-group">
-        <label for="item_title">Item Title:</label>
-        <input type="text" id="item_title" name="item_title" required>
-    </div>
+<!-- Selected Donor -->
+{% if selected_donor %}
+<div class="selected-donor">
+    <h3>Selected Donor</h3>
+    <p><strong>Name:</strong> {{ selected_donor_name }}</p>
+    <p><strong>ID:</strong> {{ selected_donor }}</p>
+</div>
+{% endif %}
 
-    <div class="form-group">
-        <label for="item_type">Item Type:</label>
-        <select id="item_type" name="item_type" required>
-            <option value="">Select a type...</option>
-            <option value="Book">Book</option>
-            <option value="DVD">DVD</option>
-            <option value="Magazine">Magazine</option>
-            <option value="CD">CD</option>
-            <option value="Audiobook">Audiobook</option>
-            <option value="Other">Other</option>
-        </select>
-    </div>
+<!-- Donation Form -->
+{% if selected_donor %}
+<div class="donation-form">
+    <h3>Donation Details</h3>
+    <form method="POST">
+        <input type="hidden" name="donor_id" value="{{ selected_donor }}">
 
-    <button type="submit" class="submit-btn">Donate Item</button>
-</form>
+        <div class="form-group">
+            <label for="item_title">Item Title:</label>
+            <input type="text" id="item_title" name="item_title" required>
+        </div>
+
+        <div class="form-group">
+            <label for="item_type">Item Type:</label>
+            <select id="item_type" name="item_type" required>
+                <option value="">Select a type...</option>
+                <option value="Book">Book</option>
+                <option value="DVD">DVD</option>
+                <option value="Magazine">Magazine</option>
+                <option value="CD">CD</option>
+                <option value="Audiobook">Audiobook</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="author_publisher">Author/Publisher:</label>
+            <input type="text" id="author_publisher" name="author_publisher">
+        </div>
+
+        <div class="form-group">
+            <label for="isbn">ISBN (optional):</label>
+            <input type="text" id="isbn" name="isbn">
+        </div>
+
+        <div class="form-group">
+            <label for="publication_year">Publication Year:</label>
+            <input type="number" id="publication_year" name="publication_year" min="1000" max="{{ current_year }}">
+        </div>
+
+        <div class="form-group">
+            <label for="date_received">Date Received:</label>
+            <input type="date" id="date_received" name="date_received" value="{{ current_date }}" required>
+        </div>
+
+        <button type="submit" class="submit-btn">Donate Item</button>
+    </form>
+</div>
+{% endif %}
 
 <style>
-.error {
-    color: red;
-    margin: 10px 0;
+/* Donor Selection Styles */
+.donor-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
 }
-.success {
-    color: green;
-    margin: 10px 0;
+.donor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.donor-card {
+    background: white;
+    border-radius: 5px;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+.donor-card.selected {
+    background: #e7f1ff;
+    border-left: 4px solid #0066cc;
+}
+.donor-card input[type="radio"] {
+    display: none;
+}
+.donor-card label {
+    display: block;
+    cursor: pointer;
+}
+.donor-name {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+.donor-id {
+    display: block;
+    font-size: 0.9em;
+    color: #666;
+}
+.btn-select {
+    background: #0066cc;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Selected Donor Styles */
+.selected-donor {
+    background: #e7f1ff;
+    border: 1px solid #0066cc;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.selected-donor h3 {
+    margin-top: 0;
+    color: #0066cc;
+}
+.selected-donor p {
+    margin: 5px 0;
+    font-size: 1rem;
+}
+
+/* Donation Form Styles */
+.donation-form {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .form-group {
-    margin: 20px 0;
-}
-.donor-selection {
-    margin: 10px 0;
-}
-.donor-option {
-    margin: 8px 0;
-    padding: 8px;
-    background: #f5f5f5;
-    border-radius: 4px;
+    margin-bottom: 15px;
 }
 label {
-    display: block;
-    margin-bottom: 5px;
     font-weight: bold;
+    margin-bottom: 5px;
+    display: block;
 }
-input[type="text"], select {
+input, select {
     width: 100%;
     padding: 8px;
     border: 1px solid #ddd;
