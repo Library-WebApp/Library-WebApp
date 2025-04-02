@@ -51,6 +51,7 @@ sql_statements = [
             EventName TEXT NOT NULL,
             EventDate DATE NOT NULL,
             Attendance INTEGER NOT NULL,
+            MaxCapacity INTEGER NOT NULL DEFAULT 20,
             RoomID INTEGER,
             FOREIGN KEY (RoomID) REFERENCES LibraryRoom(RoomID)
     );""",
@@ -327,16 +328,16 @@ def populate_sample_data(conn):
     
     # Sample Events
     events = [
-        ('Book Club Meeting', '2024-02-01', 20, 1),
-        ('Children Story Time', '2024-02-05', 50, 2),
-        ('Programming Workshop', '2024-02-10', 62, 10),
-        ('Movie Night: The Matrix', '2024-02-15', 10, 4),
-        ('Art Exhibition Opening', '2024-02-20', 32, 5),
-        ('Python for Beginners', '2024-02-25', 19, 3),
-        ('Digital Literacy Workshop', '2024-03-01', 20, 7),
-        ('Poetry Reading Night', '2024-03-05', 27, 5),
-        ('Photography Exhibition', '2024-03-10', 60, 9),
-        ('Tech Talk: AI in Everyday Life', '2024-03-15', 82, 2)
+        ('Book Club Meeting', '2024-02-01', 20, 30, 1),
+        ('Children Story Time', '2024-02-05', 50, 100, 2),
+        ('Programming Workshop', '2024-02-10', 62, 70, 10),
+        ('Movie Night: The Matrix', '2024-02-15', 10, 15, 4),
+        ('Art Exhibition Opening', '2024-02-20', 32, 50, 5),
+        ('Python for Beginners', '2024-02-25', 19, 20, 3),
+        ('Digital Literacy Workshop', '2024-03-01', 20, 25, 7),
+        ('Poetry Reading Night', '2024-03-05', 27, 50, 5),
+        ('Photography Exhibition', '2024-03-10', 60, 60, 9),
+        ('Tech Talk: AI in Everyday Life', '2024-03-15', 82, 100, 2)
     ]
 
     for event in events:

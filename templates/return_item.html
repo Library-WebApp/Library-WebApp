@@ -5,90 +5,126 @@
 {% block content %}
 <h2>Return an Item</h2>
 
-{% if error %}
-    <div class="error">{{ error }}</div>
-{% elif success %}
-    <div class="success">{{ success }}</div>
-{% endif %}
-
-<h3>Select Your Member Profile</h3>
-<form method="POST">
-    <div class="member-selection">
-        {% for member in members %}
-        <div class="member-option">
-            <input type="radio" id="member_{{ member['PersonID'] }}" name="member_id" 
-                   value="{{ member['PersonID'] }}" 
-                   {% if selected_member == member['PersonID'] %}checked{% endif %}
-                   required>
-            <label for="member_{{ member['PersonID'] }}">{{ member['Name'] }} (ID: {{ member['PersonID'] }})</label>
+<div class="member-selection">
+    <h3>Select Your Member Profile</h3>
+    <form method="POST">
+        <div class="member-grid">
+            {% for member in members %}
+            <div class="member-card {% if selected_member == member['PersonID'] %}selected{% endif %}">
+                <input type="radio" id="member_{{ member['PersonID'] }}" name="member_id" 
+                       value="{{ member['PersonID'] }}" 
+                       {% if selected_member == member['PersonID'] %}checked{% endif %}>
+                <label for="member_{{ member['PersonID'] }}">
+                    {{ member['Name'] }} (ID: {{ member['PersonID'] }})
+                </label>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-        <button type="submit" name="action" value="select_member">Show My Borrowed Items</button>
-    </div>
+        <button type="submit" name="select_member" class="btn btn-primary">
+            Show Borrowed Items
+        </button>
+    </form>
+</div>
 
+{% if selected_member %}
     {% if borrowed_items %}
-    <h3>Your Borrowed Items</h3>
-    <table>
-        <tr>
-            <th>Title</th>
-            <th>Borrow Date</th>
-            <th>Due Date</th>
-            <th>Action</th>
-        </tr>
-        {% for item in borrowed_items %}
-        <tr>
-            <td>{{ item['Title'] }}</td>
-            <td>{{ item['BorrowDate'] }}</td>
-            <td>{{ item['DueDate'] }}</td>
-            <td>
-                <form method="POST" style="display: inline;">
-                    <input type="hidden" name="record_id" value="{{ item['RecordID'] }}">
-                    <button type="submit" class="return-btn">Return</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% elif selected_member %}
-    <p>You have no items currently borrowed.</p>
+    <div class="borrowed-items">
+        <h3>Your Borrowed Items</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Borrow Date</th>
+                    <th>Due Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in borrowed_items %}
+                <tr>
+                    <td>{{ item['Title'] }}</td>
+                    <td>{{ item['BorrowDate'] }}</td>
+                    <td>{{ item['DueDate'] }}</td>
+                    <td>
+                        <form method="POST">
+                            <input type="hidden" name="record_id" value="{{ item['RecordID'] }}">
+                            <input type="hidden" name="member_id" value="{{ selected_member }}">
+                            <button type="submit" name="return_item" class="btn btn-success">
+                                Return
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        You have no items currently borrowed.
+    </div>
     {% endif %}
-</form>
+{% endif %}
 
 <style>
 .member-selection {
-    margin: 20px 0;
+    margin-bottom: 2rem;
 }
-.member-option {
-    margin: 10px 0;
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
-.error {
-    color: red;
-}
-.success {
-    color: green;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-}
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-th {
-    background-color: #f2f2f2;
-}
-.return-btn {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 5px 10px;
+.member-card {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
     cursor: pointer;
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Default subtle shadow */
 }
-.return-btn:hover {
-    background-color: #45a049;
+
+/* Hover effect */
+.member-card:hover {
+    transform: translateY(-2px); /* Slight lift */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* Enhanced shadow on hover */
+    background-color: #f8f9fa; /* Light background change */
+}
+
+/* Selected state - keeps shadow and adds blue highlight */
+.member-card.selected {
+    background-color: #e7f3ff;
+    border-left: 4px solid #0066cc;
+    box-shadow: 0 4px 8px rgba(0, 119, 204, 0.2); /* Blue-tinted shadow */
+    transform: translateY(-1px); /* Maintains slight lift */
+}
+
+.member-card input[type="radio"] {
+    display: none;
+}
+.borrowed-items {
+    margin-top: 2rem;
 }
 </style>
+
+<script>
+    document.querySelectorAll('.member-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Prevent form submission
+            e.preventDefault();
+            
+            // Uncheck all other radios
+            document.querySelectorAll('.member-card input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+                radio.closest('.member-card').classList.remove('selected');
+            });
+            
+            // Check this radio
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            this.classList.add('selected');
+        });
+    });
+</script>
 {% endblock %}
