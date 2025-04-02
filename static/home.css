@@ -1,5 +1,5 @@
 .hero {
-    background: linear-gradient(135deg, #0066cc 0%, #004080 100%);
+    background: linear-gradient(135deg, #1a1c1e 0%, #747576 100%);
     color: white;
     padding: 4rem 2rem;
     text-align: center;
@@ -33,7 +33,7 @@
 
 .btn {
     display: inline-block;
-    background: #0066cc;
+    background: #2a2a2a;
     color: white;
     padding: 0.8rem 1.5rem;
     border-radius: 4px;
