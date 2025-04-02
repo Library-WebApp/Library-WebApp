@@ -347,12 +347,21 @@ def register_event():
 # Volunteer
 @app.route('/volunteer', methods=['GET', 'POST'])
 def volunteer():
+    conn = get_db_connection()
+    
+    # Get all current volunteers
+    volunteers = conn.execute("""
+        SELECT p.Name, p.Email, p.PhoneNumber, v.JoinDate, v.MembershipStatus
+        FROM Person p
+        JOIN Volunteer v ON p.PersonID = v.VolunteerID
+        ORDER BY v.JoinDate DESC
+    """).fetchall()
+    
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
         phone = request.form['phone']
         try:
-            conn = get_db_connection()
             cur = conn.cursor()
             cur.execute('INSERT INTO Person (Name, Email, PhoneNumber, Role) VALUES (?, ?, ?, "Volunteer")',
                         (name, email, phone))
@@ -360,11 +369,14 @@ def volunteer():
             cur.execute('INSERT INTO Volunteer (VolunteerID, JoinDate, MembershipStatus) VALUES (?, ?, ?)',
                         (person_id, datetime.now().strftime('%Y-%m-%d'), 'Pending'))
             conn.commit()
-            conn.close()
             return redirect(url_for('volunteer', success=True))
         except sqlite3.Error as e:
-            return render_template('volunteer.html', error=str(e))
-    return render_template('volunteer.html')
+            return render_template('volunteer.html', 
+                                 volunteers=volunteers,
+                                 error=str(e))
+    
+    conn.close()
+    return render_template('volunteer.html', volunteers=volunteers)
 
 # Ask for Help
 @app.route('/ask-help', methods=['GET', 'POST'])
