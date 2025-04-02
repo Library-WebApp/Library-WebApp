@@ -239,12 +239,83 @@ def find_events():
         ORDER BY p.Name
     """).fetchall()
 
+    selected_member = None
+    search_term = ''
+    events = []
+
     if request.method == 'POST':
-        member_id = request.form.get('member_id')
+        selected_member = request.form.get('member_id')
         search_term = request.form.get('search_term', '')
         action = request.form.get('action')
+        event_id = request.form.get('event_id')
 
-        if member_id:
+        if action == 'register' and selected_member and event_id:
+            try:
+                # Check if event is full
+                event = conn.execute("""
+                    SELECT Attendance, MaxCapacity FROM Event WHERE EventID = ?
+                """, (event_id,)).fetchone()
+
+                if event['Attendance'] >= event['MaxCapacity']:
+                    flash("This event has reached maximum capacity.", "error")
+                else:
+                    # Check if already registered
+                    existing_reg = conn.execute("""
+                        SELECT 1 FROM EventRegistration 
+                        WHERE EventID = ? AND MemberID = ?
+                    """, (event_id, selected_member)).fetchone()
+
+                    if not existing_reg:
+                        # Register for event
+                        conn.execute("""
+                            INSERT INTO EventRegistration (EventID, MemberID)
+                            VALUES (?, ?)
+                        """, (event_id, selected_member))
+
+                        # Update attendance count
+                        conn.execute("""
+                            UPDATE Event 
+                            SET Attendance = Attendance + 1 
+                            WHERE EventID = ?
+                        """, (event_id,))
+
+                        conn.commit()
+                        flash("Successfully registered for the event!", "success")
+                    else:
+                        flash("You are already registered for this event.", "error")
+            except sqlite3.Error as e:
+                flash(f"Error registering for event: {str(e)}", "error")
+
+        elif action == 'unregister' and selected_member and event_id:
+            try:
+                # Check if registered
+                existing_reg = conn.execute("""
+                    SELECT 1 FROM EventRegistration 
+                    WHERE EventID = ? AND MemberID = ?
+                """, (event_id, selected_member)).fetchone()
+
+                if existing_reg:
+                    # Unregister from event
+                    conn.execute("""
+                        DELETE FROM EventRegistration
+                        WHERE EventID = ? AND MemberID = ?
+                    """, (event_id, selected_member))
+
+                    # Update attendance count
+                    conn.execute("""
+                        UPDATE Event 
+                        SET Attendance = Attendance - 1 
+                        WHERE EventID = ?
+                    """, (event_id,))
+
+                    conn.commit()
+                    flash("Successfully unregistered from the event!", "success")
+                else:
+                    flash("You are not registered for this event.", "error")
+            except sqlite3.Error as e:
+                flash(f"Error unregistering from event: {str(e)}", "error")
+
+        if selected_member:
             # Build query based on search term
             query = """
                 SELECT e.*, 
@@ -255,125 +326,25 @@ def find_events():
                 ORDER BY e.EventDate
             """
             events = conn.execute(query, 
-                                (member_id, 
-                                 f'%{search_term}%', 
-                                 f'%{search_term}%')).fetchall()
-
-            # Handle registration/unregistration
-            if 'event_id' in request.form:
-                event_id = request.form['event_id']
-                try:
-                    if action == 'register':
-                        # Check if event is full
-                        event = conn.execute("""
-                            SELECT Attendance, MaxCapacity FROM Event WHERE EventID = ?
-                        """, (event_id,)).fetchone()
-                        
-                        if event['Attendance'] >= event['MaxCapacity']:
-                            events = conn.execute(query, 
-                                                (member_id, 
-                                                 f'%{search_term}%', 
-                                                 f'%{search_term}%')).fetchall()
-                            return render_template('find_events.html',
-                                                members=members,
-                                                events=events,
-                                                selected_member=member_id,
-                                                search_term=search_term,
-                                                error="This event has reached maximum capacity.")
-                        
-                        # Check if already registered
-                        existing_reg = conn.execute("""
-                            SELECT 1 FROM EventRegistration 
-                            WHERE EventID = ? AND MemberID = ?
-                        """, (event_id, member_id)).fetchone()
-
-                        if not existing_reg:
-                            # Register for event
-                            conn.execute("""
-                                INSERT INTO EventRegistration (EventID, MemberID)
-                                VALUES (?, ?)
-                            """, (event_id, member_id))
-
-                            # Update attendance count
-                            conn.execute("""
-                                UPDATE Event 
-                                SET Attendance = Attendance + 1 
-                                WHERE EventID = ?
-                            """, (event_id,))
-
-                            conn.commit()
-
-                            # Refresh events list
-                            events = conn.execute(query, 
-                                                (member_id, 
-                                                 f'%{search_term}%', 
-                                                 f'%{search_term}%')).fetchall()
-
-                            return render_template('find_events.html',
-                                                members=members,
-                                                events=events,
-                                                selected_member=member_id,
-                                                search_term=search_term,
-                                                success="Successfully registered for event!")
-
-                    elif action == 'unregister':
-                        # Check if registered
-                        existing_reg = conn.execute("""
-                            SELECT 1 FROM EventRegistration 
-                            WHERE EventID = ? AND MemberID = ?
-                        """, (event_id, member_id)).fetchone()
-
-                        if existing_reg:
-                            # Unregister from event
-                            conn.execute("""
-                                DELETE FROM EventRegistration
-                                WHERE EventID = ? AND MemberID = ?
-                            """, (event_id, member_id))
-
-                            # Update attendance count
-                            conn.execute("""
-                                UPDATE Event 
-                                SET Attendance = Attendance - 1 
-                                WHERE EventID = ?
-                            """, (event_id,))
-
-                            conn.commit()
-
-                            # Refresh events list
-                            events = conn.execute(query, 
-                                                (member_id, 
-                                                 f'%{search_term}%', 
-                                                 f'%{search_term}%')).fetchall()
-
-                            return render_template('find_events.html',
-                                                members=members,
-                                                events=events,
-                                                selected_member=member_id,
-                                                search_term=search_term,
-                                                success="Successfully unregistered from event!")
-
-                except sqlite3.Error as e:
-                    return render_template('find_events.html',
-                                        members=members,
-                                        selected_member=member_id,
-                                        search_term=search_term,
-                                        error=str(e))
-
-            return render_template('find_events.html', 
-                                members=members,
-                                events=events,
-                                selected_member=member_id,
-                                search_term=search_term)
+                                  (selected_member, 
+                                   f'%{search_term}%', 
+                                   f'%{search_term}%')).fetchall()
 
     # Default GET request
-    events = conn.execute("""
-        SELECT *, (Attendance >= MaxCapacity) AS IsFull 
-        FROM Event 
-        ORDER BY EventDate
-    """).fetchall()
+    if not events:
+        events = conn.execute("""
+            SELECT *, (Attendance >= MaxCapacity) AS IsFull 
+            FROM Event 
+            ORDER BY EventDate
+        """).fetchall()
+
     conn.close()
-    return render_template('find_events.html', members=members, events=events)
-    
+    return render_template('find_events.html', 
+                           members=members, 
+                           events=events, 
+                           selected_member=selected_member, 
+                           search_term=search_term)
+
 # Register for Event
 @app.route('/register-event', methods=['GET', 'POST'])
 def register_event():
