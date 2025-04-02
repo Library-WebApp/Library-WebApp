@@ -62,7 +62,7 @@ sql_statements = [
             ItemID INTEGER NOT NULL,
             DueDate DATE NOT NULL,
             BorrowDate DATE DEFAULT CURRENT_DATE,
-            ReturnDate DATE,
+            ReturnDate DATE DEFAULT NULL,
             FineAmount REAL DEFAULT 0,
             FOREIGN KEY (MemberID) REFERENCES Member(MemberID),
             FOREIGN KEY (ItemID) REFERENCES Item(ItemID)
@@ -197,7 +197,7 @@ def add_library_room(conn, LibraryRoom):
     return cur.lastrowid
 
 def add_borrowing_record(conn, BorrowingRecord):
-    sql = '''INSERT INTO BorrowingRecord (MemberID, ItemID, DueDate, BorrowDate, ReturnDate, FineAmount) VALUES (?, ?, ?, ?, ?, ?)'''
+    sql = '''INSERT INTO BorrowingRecord (MemberID, ItemID, DueDate, BorrowDate, FineAmount) VALUES (?, ?, ?, ?, ?)'''
     cur = conn.cursor()
     cur.execute(sql, BorrowingRecord)
     conn.commit()
@@ -373,16 +373,16 @@ def populate_sample_data(conn):
         add_donation(conn, donation_record)
 
     borrow = [
-        (1, 1, '2025-01-01', '2024-03-01', '2024-03-31', 0.0),  
-        (17, 2, '2024-02-10', '2024-01-15', '2024-02-15', 0.0),    
-        (3, 3, '2024-05-01', '2024-02-01', '2024-03-02', 1.5),       
-        (30, 4, '2024-04-15', '2024-02-10', '2024-03-10', 0.0),    
-        (30, 9, '2024-08-01', '2024-06-10', '2024-07-10', 0.0),    
-        (13, 6, '2024-06-01', '2024-04-01', '2024-05-01', 0.0),      
-        (18, 7, '2024-07-15', '2024-05-15', '2024-06-15', 0.0),   
-        (5, 8, '2024-06-10', '2024-04-25', '2024-05-10', 0.0), 
-        (14, 10, '2024-09-01', '2024-07-15', '2024-07-25', 0.0),   
-        (6, 5, '2024-08-15', '2024-06-20', '2024-07-10', 0.0) 
+        (1, 1, '2024-03-01', '2024-03-31', 0.0),  
+        (17, 2, '2024-01-15', '2024-02-15', 0.0),    
+        (3, 3, '2024-02-01', '2024-03-02', 1.5),       
+        (30, 4, '2024-02-10', '2024-03-10', 0.0),    
+        (30, 9, '2024-06-10', '2024-07-10', 0.0),    
+        (13, 6, '2024-04-01', '2024-05-01', 0.0),      
+        (18, 7, '2024-05-15', '2024-06-15', 0.0),   
+        (5, 8, '2024-04-25', '2024-05-10', 0.0), 
+        (14, 10, '2024-07-15', '2024-07-25', 0.0),   
+        (6, 5, '2024-06-20', '2024-07-10', 0.0) 
     ]
 
     for borrow_record in borrow:
