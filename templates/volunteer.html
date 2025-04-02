@@ -3,26 +3,153 @@
 {% block title %}Volunteer{% endblock %}
 
 {% block content %}
-<h2>Volunteer Application</h2>
-{% if error %}
-    <div class="error">{{ error }}</div>
-{% elif success %}
-    <div class="alert">Thank you for applying to volunteer! We'll contact you soon.</div>
-{% endif %}
+<div class="volunteer-container">
+    <div class="volunteer-form">
+        <h2>Volunteer Application</h2>
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% elif success %}
+            <div class="success">Thank you for applying to volunteer! We'll contact you soon.</div>
+        {% endif %}
 
-<form method="POST">
-    <div>
-        <label>Full Name:</label>
-        <input type="text" name="name" required>
+        <form method="POST">
+            <div class="form-group">
+                <label>Full Name:</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label>Phone Number:</label>
+                <input type="tel" name="phone" required>
+            </div>
+            <button type="submit" class="btn-apply">Apply to Volunteer</button>
+        </form>
     </div>
-    <div>
-        <label>Email:</label>
-        <input type="email" name="email" required>
+
+    <div class="volunteer-list">
+        <h2>Current Volunteers</h2>
+        {% if volunteers %}
+        <table class="volunteer-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Join Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for volunteer in volunteers %}
+                <tr>
+                    <td>{{ volunteer['Name'] }}</td>
+                    <td>{{ volunteer['Email'] }}</td>
+                    <td>{{ volunteer['PhoneNumber'] }}</td>
+                    <td>{{ volunteer['JoinDate'] }}</td>
+                    <td>
+                        <span class="status-{{ volunteer['MembershipStatus'].lower() }}">
+                            {{ volunteer['MembershipStatus'] }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No volunteers found.</p>
+        {% endif %}
     </div>
-    <div>
-        <label>Phone Number:</label>
-        <input type="tel" name="phone" required>
-    </div>
-    <button type="submit">Apply to Volunteer</button>
-</form>
+</div>
+
+<style>
+.volunteer-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.volunteer-form, .volunteer-list {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.btn-apply {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.volunteer-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.volunteer-table th, .volunteer-table td {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.volunteer-table th {
+    background-color: #f2f2f2;
+}
+
+.status-pending {
+    color: #FFC107;
+    font-weight: bold;
+}
+
+.status-active {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.status-inactive {
+    color: #F44336;
+    font-weight: bold;
+}
+
+.error {
+    color: #D32F2F;
+    background-color: #FFEBEE;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.success {
+    color: #388E3C;
+    background-color: #E8F5E9;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+</style>
 {% endblock %}

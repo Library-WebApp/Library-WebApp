@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 import sqlite3
 from datetime import datetime, timedelta
+import os  # Add this import
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Add this line - generates a random secret key
 
 def get_db_connection():
     print("Connecting to database...")
@@ -82,87 +84,80 @@ def borrow_item():
 # Return Item
 @app.route('/return-item', methods=['GET', 'POST'])
 def return_item():
-    conn = get_db_connection()
-
-    # Get all members for display
-    members = conn.execute("""
-        SELECT p.PersonID, p.Name 
-        FROM Person p
-        JOIN Member m ON p.PersonID = m.MemberID
-        WHERE p.Role = 'Member'
-    """).fetchall()
-
-    if request.method == 'POST':
-        # Handle member selection or item return
-        if 'member_id' in request.form:
-            # Member selected - show their borrowed items
-            member_id = request.form['member_id']
-            borrowed_items = conn.execute("""
-                SELECT br.RecordID, i.Title, i.ItemID, br.BorrowDate, br.DueDate
-                FROM BorrowingRecord br
-                JOIN Item i ON br.ItemID = i.ItemID
-                WHERE br.MemberID = ? AND br.ReturnDate IS NULL
-            """, (member_id,)).fetchall()
-
-            return render_template('return_item.html', 
-                                 members=members,
-                                 borrowed_items=borrowed_items,
-                                 selected_member=member_id)
-
-        elif 'record_id' in request.form:
-            # Item return submitted
-            record_id = request.form['record_id']
-            try:
-                return_date = datetime.now().strftime('%Y-%m-%d')
-
-                # Get item ID from the borrowing record
-                record = conn.execute("""
-                    SELECT ItemID FROM BorrowingRecord WHERE RecordID = ?
-                """, (record_id,)).fetchone()
-
-                if record:
-                    # Update borrowing record
-                    conn.execute("""
-                        UPDATE BorrowingRecord 
-                        SET ReturnDate = ? 
-                        WHERE RecordID = ?
-                    """, (return_date, record_id))
-
-                    # Update item availability
-                    conn.execute("""
-                        UPDATE Item 
-                        SET AvailabilityStatus = 1 
-                        WHERE ItemID = ?
-                    """, (record['ItemID'],))
-
-                    conn.commit()
-
-                # Get member ID to show their remaining borrowed items
-                member_record = conn.execute("""
-                    SELECT MemberID FROM BorrowingRecord WHERE RecordID = ?
-                """, (record_id,)).fetchone()
-
-                if member_record:
-                    borrowed_items = conn.execute("""
-                        SELECT br.RecordID, i.Title, i.ItemID, br.BorrowDate, br.DueDate
-                        FROM BorrowingRecord br
-                        JOIN Item i ON br.ItemID = i.ItemID
-                        WHERE br.MemberID = ? AND br.ReturnDate IS NULL
-                    """, (member_record['MemberID'],)).fetchall()
-
-                conn.close()
-                return render_template('return_item.html',
-                                    members=members,
-                                    borrowed_items=borrowed_items,
-                                    selected_member=member_record['MemberID'],
-                                    success="Item returned successfully!")
-            except sqlite3.Error as e:
-                return render_template('return_item.html', 
-                                    members=members,
-                                    error=str(e))
-
-    conn.close()
-    return render_template('return_item.html', members=members)
+    try:
+        conn = get_db_connection()
+        
+        # Get all members for display
+        members = conn.execute("""
+            SELECT p.PersonID, p.Name 
+            FROM Person p
+            JOIN Member m ON p.PersonID = m.MemberID
+            WHERE p.Role = 'Member'
+            ORDER BY p.Name
+        """).fetchall()
+        
+        selected_member = request.form.get('member_id') if request.method == 'POST' else None
+        borrowed_items = []
+        
+        if request.method == 'POST':
+            # Handle member selection
+            if 'select_member' in request.form:
+                selected_member = request.form['member_id']
+                borrowed_items = conn.execute("""
+                    SELECT br.RecordID, i.Title, i.ItemID, br.BorrowDate, br.DueDate
+                    FROM BorrowingRecord br
+                    JOIN Item i ON br.ItemID = i.ItemID
+                    WHERE br.MemberID = ? AND br.ReturnDate IS NULL
+                """, (selected_member,)).fetchall()
+            
+            # Handle item return
+            elif 'return_item' in request.form:
+                record_id = request.form['record_id']
+                selected_member = request.form['member_id']
+                
+                # Update borrowing record
+                conn.execute("""
+                    UPDATE BorrowingRecord 
+                    SET ReturnDate = DATE('now') 
+                    WHERE RecordID = ?
+                """, (record_id,))
+                
+                # Update item availability
+                conn.execute("""
+                    UPDATE Item 
+                    SET AvailabilityStatus = 1 
+                    WHERE ItemID = (
+                        SELECT ItemID FROM BorrowingRecord WHERE RecordID = ?
+                    )
+                """, (record_id,))
+                
+                conn.commit()
+                
+                # Get updated borrowed items
+                borrowed_items = conn.execute("""
+                    SELECT br.RecordID, i.Title, i.ItemID, br.BorrowDate, br.DueDate
+                    FROM BorrowingRecord br
+                    JOIN Item i ON br.ItemID = i.ItemID
+                    WHERE br.MemberID = ? AND br.ReturnDate IS NULL
+                """, (selected_member,)).fetchall()
+                
+                flash('Item successfully returned!', 'success')
+        
+        return render_template('return_item.html',
+                            members=members,
+                            borrowed_items=borrowed_items,
+                            selected_member=selected_member)
+    
+    except sqlite3.Error as e:
+        flash(f'Database error: {str(e)}', 'error')
+        return render_template('return_item.html',
+                            members=members,
+                            borrowed_items=[],
+                            selected_member=selected_member)
+    
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 # Donate Item
 @app.route('/donate-item', methods=['GET', 'POST'])
@@ -374,12 +369,21 @@ def register_event():
 # Volunteer
 @app.route('/volunteer', methods=['GET', 'POST'])
 def volunteer():
+    conn = get_db_connection()
+    
+    # Get all current volunteers
+    volunteers = conn.execute("""
+        SELECT p.Name, p.Email, p.PhoneNumber, v.JoinDate, v.MembershipStatus
+        FROM Person p
+        JOIN Volunteer v ON p.PersonID = v.VolunteerID
+        ORDER BY v.JoinDate DESC
+    """).fetchall()
+    
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
         phone = request.form['phone']
         try:
-            conn = get_db_connection()
             cur = conn.cursor()
             cur.execute('INSERT INTO Person (Name, Email, PhoneNumber, Role) VALUES (?, ?, ?, "Volunteer")',
                         (name, email, phone))
@@ -387,11 +391,14 @@ def volunteer():
             cur.execute('INSERT INTO Volunteer (VolunteerID, JoinDate, MembershipStatus) VALUES (?, ?, ?)',
                         (person_id, datetime.now().strftime('%Y-%m-%d'), 'Pending'))
             conn.commit()
-            conn.close()
             return redirect(url_for('volunteer', success=True))
         except sqlite3.Error as e:
-            return render_template('volunteer.html', error=str(e))
-    return render_template('volunteer.html')
+            return render_template('volunteer.html', 
+                                 volunteers=volunteers,
+                                 error=str(e))
+    
+    conn.close()
+    return render_template('volunteer.html', volunteers=volunteers)
 
 # Ask for Help
 @app.route('/ask-help', methods=['GET', 'POST'])
