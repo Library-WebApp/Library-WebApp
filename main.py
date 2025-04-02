@@ -317,7 +317,28 @@ def populate_sample_data(conn):
         ('The Hobbit', 'Book', 'J.R.R. Tolkien', 1, '978-0547928227', 1937),
         ('1984', 'Book', 'George Orwell', 1, '978-0451524935', 1949),
         ('The Catcher in the Rye', 'Book', 'J.D. Salinger', 1, '978-0316769488', 1951),
-        ('The Lion King', 'DVD', 'Disney', 1, None, 1994)
+        ('The Lion King', 'DVD', 'Disney', 1, None, 1994),
+        ('Avatar', 'DVD', '20th Century Fox', 1, None, 2009),
+        ('The Shawshank Redemption', 'DVD', 'Castle Rock Entertainment', 1, None, 1994),
+        ('The Godfather', 'DVD', 'Paramount Pictures', 1, None, 1972),
+        ('The Dark Knight', 'DVD', 'Warner Bros', 1, None, 2008),
+        ('Interstellar', 'DVD', 'Warner Bros', 1, None, 2014),
+        ('The Lord of the Rings: The Fellowship of the Ring', 'DVD', 'New Line Cinema', 1, None, 2001),
+        ('The Avengers', 'DVD', 'Marvel Studios', 1, None, 2012),
+        ('Big Nature', 'Book', 'National Geographic', 1, '978-1426211234', 2015),
+        ('The Art of War', 'Book', 'Sun Tzu', 1, '978-1590302255', 2005),
+        ('The Alchemist', 'Book', 'Paulo Coelho', 1, '978-0062315007', 1993),
+        ('The Da Vinci Code', 'Book', 'Dan Brown', 1, '978-0307474278', 2003),
+        ('The Fault in Our Stars', 'Book', 'John Green', 1, '978-0525478812', 2012),
+        ('Harry Potter and the Sorcerer\'s Stone', 'Book', 'J.K. Rowling', 1, '978-0439708180', 1997),
+        ('Vogue', 'Magazine', 'Conde Nast', 1, None, 2023),
+        ('National Geographic', 'Magazine', 'National Geographic Society', 1, None, 2023),
+        ('Time', 'Magazine', 'Time Inc.', 1, None, 2023),
+        ('Forbes', 'Magazine', 'Forbes Media', 1, None, 2023),
+        ('The New Yorker', 'Magazine', 'Condé Nast', 1, None, 2023),
+        ('Wired', 'Magazine', 'Condé Nast', 1, None, 2023),
+        ('Scientific American', 'Magazine', 'Springer Nature', 1, None, 2023),
+        ('The Economist', 'Magazine', 'The Economist Group', 1, None, 2023)
     ]
 
     for item in items:
@@ -374,14 +395,14 @@ def populate_sample_data(conn):
 
     borrow = [
         (1, 1, '2024-03-01', '2024-03-31', 0.0),  
-        (17, 2, '2024-01-15', '2024-02-15', 0.0),    
+        (17, 20, '2024-01-15', '2024-02-15', 0.0),    
         (3, 3, '2024-02-01', '2024-03-02', 1.5),       
         (30, 4, '2024-02-10', '2024-03-10', 0.0),    
         (30, 9, '2024-06-10', '2024-07-10', 0.0),    
-        (13, 6, '2024-04-01', '2024-05-01', 0.0),      
+        (13, 15, '2024-04-01', '2024-05-01', 0.0),      
         (18, 7, '2024-05-15', '2024-06-15', 0.0),   
-        (5, 8, '2024-04-25', '2024-05-10', 0.0), 
-        (14, 10, '2024-07-15', '2024-07-25', 0.0),   
+        (5, 12, '2024-04-25', '2024-05-10', 0.0), 
+        (14, 17, '2024-07-15', '2024-07-25', 0.0),   
         (6, 5, '2024-06-20', '2024-07-10', 0.0) 
     ]
 
