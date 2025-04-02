@@ -315,10 +315,11 @@ def find_events():
             except sqlite3.Error as e:
                 flash(f"Error unregistering from event: {str(e)}", "error")
 
+        # Modified query to include IsFull for both cases
         if selected_member:
-            # Build query based on search term
             query = """
                 SELECT e.*, 
+                       (e.Attendance >= e.MaxCapacity) AS IsFull,
                        EXISTS(SELECT 1 FROM EventRegistration er 
                               WHERE er.EventID = e.EventID AND er.MemberID = ?) AS IsRegistered
                 FROM Event e
@@ -326,12 +327,22 @@ def find_events():
                 ORDER BY e.EventDate
             """
             events = conn.execute(query, 
-                                  (selected_member, 
-                                   f'%{search_term}%', 
-                                   f'%{search_term}%')).fetchall()
+                                (selected_member, 
+                                 f'%{search_term}%', 
+                                 f'%{search_term}%')).fetchall()
+        else:
+            query = """
+                SELECT *, (Attendance >= MaxCapacity) AS IsFull 
+                FROM Event 
+                WHERE EventName LIKE ? OR EventDate LIKE ?
+                ORDER BY EventDate
+            """
+            events = conn.execute(query, 
+                                (f'%{search_term}%', 
+                                 f'%{search_term}%')).fetchall()
 
-    # Default GET request
-    if not events:
+    # Default GET request (shows all events with IsFull status)
+    if not events and request.method == 'GET':
         events = conn.execute("""
             SELECT *, (Attendance >= MaxCapacity) AS IsFull 
             FROM Event 
@@ -340,27 +351,10 @@ def find_events():
 
     conn.close()
     return render_template('find_events.html', 
-                           members=members, 
-                           events=events, 
-                           selected_member=selected_member, 
-                           search_term=search_term)
-
-# Register for Event
-@app.route('/register-event', methods=['GET', 'POST'])
-def register_event():
-    if request.method == 'POST':
-        event_id = request.form['event_id']
-        member_id = request.form['member_id']
-        try:
-            conn = get_db_connection()
-            conn.execute('INSERT INTO EventRegistration (EventID, MemberID) VALUES (?, ?)',
-                         (event_id, member_id))
-            conn.commit()
-            conn.close()
-            return redirect(url_for('register_event', success=True))
-        except sqlite3.Error as e:
-            return render_template('register_event.html', error=str(e))
-    return render_template('register_event.html')
+                         members=members, 
+                         events=events, 
+                         selected_member=selected_member, 
+                         search_term=search_term)
 
 # Volunteer
 @app.route('/volunteer', methods=['GET', 'POST'])
