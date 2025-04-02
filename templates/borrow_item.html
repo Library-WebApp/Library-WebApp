@@ -11,6 +11,7 @@
     <div class="success">Item borrowed successfully!</div>
 {% endif %}
 
+<div class="member-selection">
 <form method="POST">
     <h3>Select Your Member Profile</h3>
     <div class="member-grid">
@@ -25,6 +26,7 @@
         </div>
         {% endfor %}
     </div>
+</div>
 
     <h3>Search for Items</h3>
     <input type="text" id="search_term" placeholder="Search items..." onkeyup="filterItems()">
@@ -110,6 +112,7 @@ document.querySelectorAll('.member-card').forEach(card => {
 
 <style>
 .member-selection {
+    background: #f8f9fa;
     margin: 20px 0;
 }
 .member-option {
