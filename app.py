@@ -251,25 +251,69 @@ def find_events():
 
         if action == 'register' and selected_member and event_id:
             try:
-                conn.execute("""
-                    INSERT INTO EventRegistration (EventID, MemberID)
-                    VALUES (?, ?)
-                """, (event_id, selected_member))
-                conn.commit()
-                flash('Successfully registered for the event!', 'success')
+                # Check if event is full
+                event = conn.execute("""
+                    SELECT Attendance, MaxCapacity FROM Event WHERE EventID = ?
+                """, (event_id,)).fetchone()
+
+                if event['Attendance'] >= event['MaxCapacity']:
+                    flash("This event has reached maximum capacity.", "error")
+                else:
+                    # Check if already registered
+                    existing_reg = conn.execute("""
+                        SELECT 1 FROM EventRegistration 
+                        WHERE EventID = ? AND MemberID = ?
+                    """, (event_id, selected_member)).fetchone()
+
+                    if not existing_reg:
+                        # Register for event
+                        conn.execute("""
+                            INSERT INTO EventRegistration (EventID, MemberID)
+                            VALUES (?, ?)
+                        """, (event_id, selected_member))
+
+                        # Update attendance count
+                        conn.execute("""
+                            UPDATE Event 
+                            SET Attendance = Attendance + 1 
+                            WHERE EventID = ?
+                        """, (event_id,))
+
+                        conn.commit()
+                        flash("Successfully registered for the event!", "success")
+                    else:
+                        flash("You are already registered for this event.", "error")
             except sqlite3.Error as e:
-                flash(f'Error registering for event: {str(e)}', 'error')
+                flash(f"Error registering for event: {str(e)}", "error")
 
         elif action == 'unregister' and selected_member and event_id:
             try:
-                conn.execute("""
-                    DELETE FROM EventRegistration
+                # Check if registered
+                existing_reg = conn.execute("""
+                    SELECT 1 FROM EventRegistration 
                     WHERE EventID = ? AND MemberID = ?
-                """, (event_id, selected_member))
-                conn.commit()
-                flash('Successfully unregistered from the event!', 'success')
+                """, (event_id, selected_member)).fetchone()
+
+                if existing_reg:
+                    # Unregister from event
+                    conn.execute("""
+                        DELETE FROM EventRegistration
+                        WHERE EventID = ? AND MemberID = ?
+                    """, (event_id, selected_member))
+
+                    # Update attendance count
+                    conn.execute("""
+                        UPDATE Event 
+                        SET Attendance = Attendance - 1 
+                        WHERE EventID = ?
+                    """, (event_id,))
+
+                    conn.commit()
+                    flash("Successfully unregistered from the event!", "success")
+                else:
+                    flash("You are not registered for this event.", "error")
             except sqlite3.Error as e:
-                flash(f'Error unregistering from event: {str(e)}', 'error')
+                flash(f"Error unregistering from event: {str(e)}", "error")
 
         if selected_member:
             # Build query based on search term
