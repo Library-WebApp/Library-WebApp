@@ -11,14 +11,17 @@
     <div class="success">Item borrowed successfully!</div>
 {% endif %}
 
-<h3>Select Your Member Profile</h3>
 <form method="POST">
-    <div class="member-selection">
+    <h3>Select Your Member Profile</h3>
+    <div class="member-grid">
         {% for member in members %}
-        <div class="member-option">
+        <div class="member-card {% if request.form.get('member_id') == member['PersonID'] %}selected{% endif %}">
             <input type="radio" id="member_{{ member['PersonID'] }}" name="member_id" 
                    value="{{ member['PersonID'] }}" required>
-            <label for="member_{{ member['PersonID'] }}">{{ member['Name'] }} (ID: {{ member['PersonID'] }})</label>
+            <label for="member_{{ member['PersonID'] }}">
+                <span class="member-name">{{ member['Name'] }}</span>
+                <span class="member-id">ID: {{ member['PersonID'] }}</span>
+            </label>
         </div>
         {% endfor %}
     </div>
@@ -43,7 +46,7 @@
             <td>{{ 'Yes' if item['AvailabilityStatus'] else 'No' }}</td>
             <td>
                 {% if item['AvailabilityStatus'] %}
-                <button type="button" onclick="borrowItem({{ item['ItemID'] }})">Borrow</button>
+                <button type="button" class="borrow-button" data-item-id="{{ item['ItemID'] }}">Borrow</button>
                 {% else %}
                 Not Available
                 {% endif %}
@@ -75,16 +78,34 @@ function filterItems() {
     }
 }
 
-function borrowItem(itemId) {
-    const memberSelected = document.querySelector('input[name="member_id"]:checked');
-    if (!memberSelected) {
-        alert('Please select your member profile first');
-        return;
-    }
+document.querySelectorAll('.borrow-button').forEach(button => {
+    button.addEventListener('click', function () {
+        const itemId = this.getAttribute('data-item-id');
+        const memberSelected = document.querySelector('input[name="member_id"]:checked');
+        if (!memberSelected) {
+            alert('Please select your member profile first');
+            return;
+        }
 
-    document.getElementById('selected_item').value = itemId;
-    document.forms[0].submit();
-}
+        document.getElementById('selected_item').value = itemId;
+        document.querySelector('form').submit();
+    });
+});
+
+document.querySelectorAll('.member-card').forEach(card => {
+    card.addEventListener('click', function () {
+        // Uncheck all other radios
+        document.querySelectorAll('.member-card input[type="radio"]').forEach(radio => {
+            radio.checked = false;
+            radio.closest('.member-card').classList.remove('selected');
+        });
+
+        // Check this radio
+        const radio = this.querySelector('input[type="radio"]');
+        radio.checked = true;
+        this.classList.add('selected');
+    });
+});
 </script>
 
 <style>
@@ -99,6 +120,47 @@ function borrowItem(itemId) {
 }
 .success {
     color: green;
+}
+
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.member-card {
+    background: white;
+    border-radius: 5px;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    cursor: pointer;
+    text-align: center;
+}
+
+.member-card.selected {
+    background: #e7f1ff;
+    border-left: 4px solid #0066cc;
+}
+
+.member-card input[type="radio"] {
+    display: none;
+}
+
+.member-card label {
+    display: block;
+    cursor: pointer;
+}
+
+.member-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.member-id {
+    font-size: 0.9em;
+    color: #666;
 }
 </style>
 {% endblock %}
