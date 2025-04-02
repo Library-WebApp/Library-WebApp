@@ -107,7 +107,7 @@ def return_item():
                     SELECT br.RecordID, i.Title, i.ItemID, br.BorrowDate, br.DueDate
                     FROM BorrowingRecord br
                     JOIN Item i ON br.ItemID = i.ItemID
-                    WHERE br.MemberID = ? 
+                    WHERE br.MemberID = ? AND br.ReturnDate IS NULL
                 """, (selected_member,)).fetchall()
             
             # Handle item return
@@ -138,7 +138,7 @@ def return_item():
                     SELECT br.RecordID, i.Title, i.ItemID, br.BorrowDate, br.DueDate
                     FROM BorrowingRecord br
                     JOIN Item i ON br.ItemID = i.ItemID
-                    WHERE br.MemberID = ? 
+                    WHERE br.MemberID = ? AND br.ReturnDate IS NULL
                 """, (selected_member,)).fetchall()
                 
                 flash('Item successfully returned!', 'success')
