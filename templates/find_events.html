@@ -16,10 +16,10 @@
     <form method="POST" id="memberForm">
         <div class="member-grid">
             {% for member in members %}
-            <div class="member-card {% if selected_member == member['PersonID'] %}selected{% endif %}">
+            <div class="member-card {% if selected_member == member['PersonID']|string %}selected{% endif %}">
                 <input type="radio" id="member_{{ member['PersonID'] }}" name="member_id" 
                        value="{{ member['PersonID'] }}" 
-                       {% if selected_member == member['PersonID'] %}checked{% endif %}>
+                       {% if selected_member == member['PersonID']|string %}checked{% endif %}>
                 <label for="member_{{ member['PersonID'] }}">
                     <span class="member-name">{{ member['Name'] }}</span>
                     <span class="member-id">ID: {{ member['PersonID'] }}</span>
@@ -116,23 +116,46 @@
     gap: 10px;
     margin-bottom: 15px;
 }
+
+/* Enhanced Member Card Styles */
 .member-card {
     background: white;
     border-radius: 5px;
     padding: 12px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
 }
+
+/* Hover effect */
+.member-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    background-color: #f0f5ff;
+    border-color: #cce0ff;
+}
+
+/* Selected state */
 .member-card.selected {
-    background: #e7f1ff;
+    background-color: #e7f3ff;
     border-left: 4px solid #0066cc;
+    box-shadow: 0 4px 8px rgba(0, 119, 204, 0.2);
+    transform: translateY(-1px);
 }
+
+/* Make the entire card clickable */
 .member-card input[type="radio"] {
-    display: none;
+    position: absolute;
+    opacity: 0;
+    height: 0;
+    width: 0;
 }
+
 .member-card label {
     display: block;
     cursor: pointer;
+    margin: 0;
 }
 .member-name {
     display: block;
@@ -143,14 +166,6 @@
     display: block;
     font-size: 0.9em;
     color: #666;
-}
-.btn-select {
-    background: #0066cc;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
 }
 
 /* Search Styles */
@@ -277,6 +292,35 @@
                 });
             }
         });
+    });
+
+    // Make entire card clickable and submit form on selection
+    document.querySelectorAll('.member-card').forEach(card => {
+        card.addEventListener('click', function() {
+            // Uncheck all other radios
+            document.querySelectorAll('.member-card input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+                radio.closest('.member-card').classList.remove('selected');
+            });
+
+            // Check this radio
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            this.classList.add('selected');
+
+            // Submit the form after a brief delay for visual feedback
+            setTimeout(() => {
+                document.getElementById('memberForm').submit();
+            }, 200);
+        });
+
+        // Prevent label clicks from triggering twice
+        const label = card.querySelector('label');
+        if (label) {
+            label.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
     });
 </script>
 {% endblock %}
