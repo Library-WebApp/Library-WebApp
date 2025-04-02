@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 
 def get_db_connection():
+    print("Connecting to database...")
     conn = sqlite3.connect('354_mini_project.db')
     conn.row_factory = sqlite3.Row
     return conn
@@ -176,30 +177,51 @@ def donate_item():
         """).fetchall()
 
     if request.method == 'POST':
+        # Check if the donor selection form was submitted
+        if 'donor_id' in request.form and 'item_title' not in request.form:
+            # Donor selected, render the donation form
+            selected_donor = request.form['donor_id']
+            selected_donor_name = next((donor['Name'] for donor in donors if str(donor['PersonID']) == selected_donor), "Unknown")
+            return render_template('donate_item.html', donors=donors, selected_donor=selected_donor, selected_donor_name=selected_donor_name)
+
+        # Handle the donation form submission
         donor_id = request.form['donor_id']
         item_title = request.form['item_title']
         item_type = request.form['item_type']
+        author_publisher = request.form.get('author_publisher', None)
+        isbn = request.form.get('isbn', None)
+        publication_year = request.form.get('publication_year', None)
+        date_received = request.form.get('date_received', datetime.now().strftime('%Y-%m-%d'))
+
+        # Validate publication year
+        if publication_year:
+            try:
+                publication_year = int(publication_year)
+                if publication_year < 1000 or publication_year > datetime.now().year:
+                    raise ValueError("Invalid publication year")
+            except ValueError:
+                return render_template('donate_item.html', donors=donors, selected_donor=donor_id, error="Invalid publication year")
 
         try:
             # First add the item to the Item table
             cur = conn.cursor()
             cur.execute("""
-                INSERT INTO Item (Title, Type, AvailabilityStatus)
-                    VALUES (?, ?, 1)
-                """, (item_title, item_type))
+                INSERT INTO Item (Title, Type, AuthorPublisher, ISBN, PublicationYear, AvailabilityStatus)
+                    VALUES (?, ?, ?, ?, ?, 1)
+                """, (item_title, item_type, author_publisher, isbn, publication_year))
             item_id = cur.lastrowid
 
             # Then record the donation
             cur.execute("""
-                INSERT INTO Donation (DonorID, ItemID, ItemTitle, ItemType, DateReceived)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (donor_id, item_id, item_title, item_type, datetime.now().strftime('%Y-%m-%d')))
+                INSERT INTO Donation (DonorID, ItemID, DateReceived)
+                    VALUES (?, ?, ?)
+                """, (donor_id, item_id, date_received))
 
             conn.commit()
             conn.close()
             return redirect(url_for('donate_item', success=True))
         except sqlite3.Error as e:
-            return render_template('donate_item.html', donors=donors, error=str(e))
+            return render_template('donate_item.html', donors=donors, selected_donor=donor_id, error=str(e))
 
     conn.close()
     return render_template('donate_item.html', donors=donors)
