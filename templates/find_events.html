@@ -61,8 +61,13 @@
                 <td>{{ event['EventName'] }}</td>
                 <td>{{ event['EventDate'] }}</td>
                 <td>Room {{ event['RoomID'] }}</td>
-                <td>{{ event['Attendance'] }}/{{ event['MaxCapacity'] if event['MaxCapacity'] else event['Attendance'] + 20 }}</td>
                 <td>
+                    {% if event['IsFull'] %}
+                        <span class="text-danger">Full ({{ event['Attendance'] }}/{{ event['MaxCapacity'] }})</span>
+                    {% else %}
+                        {{ event['Attendance'] }}/{{ event['MaxCapacity'] }}
+                    {% endif %}
+                </td>                <td>
                     {% if event['IsRegistered'] %}
                     <div class="registration-actions">
                         <span class="status-registered">Registered ✓</span>
@@ -75,6 +80,9 @@
                         </form>
                     </div>
                     {% else %}
+                    {% if event['IsFull'] %}
+                    <span class="text-muted">Event Full</span>
+                    {% else %}
                     <form method="POST" class="register-form">
                         <input type="hidden" name="member_id" value="{{ selected_member }}">
                         <input type="hidden" name="event_id" value="{{ event['EventID'] }}">
@@ -82,6 +90,7 @@
                         <input type="hidden" name="action" value="register">
                         <button type="submit" class="btn-register">Register</button>
                     </form>
+                    {% endif %}
                     {% endif %}
                 </td>
             </tr>
@@ -163,6 +172,21 @@
     border-radius: 4px;
     margin-left: 8px;
     cursor: pointer;
+}
+
+.text-danger {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.text-muted {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.btn-register:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
 }
 
 /* Events Table Styles */
