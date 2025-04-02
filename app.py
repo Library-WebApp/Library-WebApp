@@ -8,7 +8,7 @@ app.secret_key = os.urandom(24)  # Add this line - generates a random secret key
 
 def get_db_connection():
     print("Connecting to database...")
-    conn = sqlite3.connect('354_mini_project.db')
+    conn = sqlite3.connect('library.db')
     conn.row_factory = sqlite3.Row
     return conn
 

@@ -426,7 +426,7 @@ def populate_sample_data(conn):
         add_help_request(conn, help_request)
 
 try:
-    with sqlite3.connect('354_mini_project.db') as conn:
+    with sqlite3.connect('library.db') as conn:
         cursor = conn.cursor()
 
         # execute table creation statements
@@ -449,7 +449,7 @@ except sqlite3.Error as e:
     print("Failed to initialize database:", e)
 
 try:
-    with sqlite3.connect('354_mini_project.db') as conn:
+    with sqlite3.connect('library.db') as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM Item")
         item_count = cursor.fetchone()[0]
