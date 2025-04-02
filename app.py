@@ -425,6 +425,10 @@ def volunteer():
 @app.route('/ask-help', methods=['GET', 'POST'])
 def ask_help():
     conn = get_db_connection()
+    error = None
+    success = None
+    previous_requests = None
+    selected_member = None
 
     # Get all members for selection
     members = conn.execute("""
@@ -440,52 +444,48 @@ def ask_help():
         description = request.form.get('description')
 
         try:
-            if member_id and not description:
-                # Just member selected - show their previous requests
-                previous_requests = conn.execute("""
-                    SELECT h.RequestID, h.Description, h.RequestDate, p.Name
-                    FROM HelpRequest h
-                    JOIN Person p ON h.MemberID = p.PersonID
-                    WHERE h.MemberID = ?
-                    ORDER BY h.RequestDate DESC
-                """, (member_id,)).fetchall()
-
-                return render_template('ask_help.html',
-                                    members=members,
-                                    selected_member=member_id,
-                                    previous_requests=previous_requests)
-
-            elif member_id and description:
-                # New request submitted
-                conn.execute("""
-                    INSERT INTO HelpRequest (MemberID, Description, RequestDate)
-                    VALUES (?, ?, ?)
-                """, (member_id, description, datetime.now().strftime('%Y-%m-%d')))
-
-                conn.commit()
-
-                # Get updated request list
-                previous_requests = conn.execute("""
-                    SELECT h.RequestID, h.Description, h.RequestDate, p.Name
-                    FROM HelpRequest h
-                    JOIN Person p ON h.MemberID = p.PersonID
-                    WHERE h.MemberID = ?
-                    ORDER BY h.RequestDate DESC
-                """, (member_id,)).fetchall()
-
-                return render_template('ask_help.html',
-                                    members=members,
-                                    selected_member=member_id,
-                                    previous_requests=previous_requests,
-                                    success="Your request has been submitted!")
+            if member_id:
+                # Convert to string for consistent comparison in template
+                selected_member = str(member_id)
+                
+                if not description:
+                    # Member selection only
+                    previous_requests = conn.execute("""
+                        SELECT h.RequestID, h.Description, h.RequestDate, p.Name
+                        FROM HelpRequest h
+                        JOIN Person p ON h.MemberID = p.PersonID
+                        WHERE h.MemberID = ?
+                        ORDER BY h.RequestDate DESC
+                    """, (member_id,)).fetchall()
+                else:
+                    # New request submission
+                    conn.execute("""
+                        INSERT INTO HelpRequest (MemberID, Description, RequestDate)
+                        VALUES (?, ?, ?)
+                    """, (member_id, description, datetime.now().strftime('%Y-%m-%d')))
+                    conn.commit()
+                    
+                    previous_requests = conn.execute("""
+                        SELECT h.RequestID, h.Description, h.RequestDate, p.Name
+                        FROM HelpRequest h
+                        JOIN Person p ON h.MemberID = p.PersonID
+                        WHERE h.MemberID = ?
+                        ORDER BY h.RequestDate DESC
+                    """, (member_id,)).fetchall()
+                    
+                    success = "Your request has been submitted!"
 
         except sqlite3.Error as e:
-            return render_template('ask_help.html',
-                                members=members,
-                                error=str(e))
+            error = str(e)
 
     conn.close()
-    return render_template('ask_help.html', members=members)
+    return render_template('ask_help.html',
+                         members=members,
+                         selected_member=selected_member,
+                         selected_member_name=next((m['Name'] for m in members if str(m['PersonID']) == str(selected_member)), None) if selected_member else None,
+                         previous_requests=previous_requests,
+                         error=error,
+                         success=success)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
