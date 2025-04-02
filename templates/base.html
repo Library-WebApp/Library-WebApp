@@ -3,6 +3,7 @@
 <head>
     <title>Library System - {% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav>
