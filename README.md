@@ -108,25 +108,11 @@ All tables satisfy Boyce-Codd Normal Form (BCNF) with:
    git clone https://github.com/Library-WebApp/Library-WebApp.git
    cd Library-WebApp
    ```
-
-2. Set up Python environment (Python 3.11+ required):
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   pip install -r requirements.txt
-   ```
-
-3. Initialize the database:
-   ```bash
-   python init_db.py
-   ```
-
-4. Run the application:
+2. Run the application:
    ```bash
    python app.py
    ```
-
-5. Access the application at `http://localhost:5001`
+3. Access the application at `http://localhost:5001`
 
 ## Usage Examples
 
