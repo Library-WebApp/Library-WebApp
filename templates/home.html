@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Home{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+{% endblock %}
 
 {% block content %}
     <!-- Home Page Specific Content -->
@@ -34,49 +36,3 @@
         <a href="/find-events" class="btn">Upcoming Events</a>
     </div>
 {% endblock %}
-
-<style>
-.hero {
-    background: linear-gradient(135deg, #0066cc 0%, #004080 100%);
-    color: white;
-    padding: 4rem 2rem;
-    text-align: center;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-}
-
-.features {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin: 3rem 0;
-}
-
-.feature-card {
-    background: white;
-    border-radius: 8px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-}
-
-.quick-links {
-    text-align: center;
-    margin-top: 3rem;
-}
-
-.btn {
-    display: inline-block;
-    background: #0066cc;
-    color: white;
-    padding: 0.8rem 1.5rem;
-    border-radius: 4px;
-    text-decoration: none;
-    margin: 0.5rem;
-}
-</style>
-           
