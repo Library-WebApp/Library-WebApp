@@ -83,7 +83,7 @@
                     {% if event['IsFull'] %}
                     <span class="text-muted">Event Full</span>
                     {% else %}
-                    <form method="POST" class="register-form">
+                    <form method="POST" class="register-form" id="registerForm{{ event['EventID'] }}">
                         <input type="hidden" name="member_id" value="{{ selected_member }}">
                         <input type="hidden" name="event_id" value="{{ event['EventID'] }}">
                         <input type="hidden" name="search_term" value="{{ search_term if search_term }}">
@@ -257,11 +257,26 @@
 </style>
 
 <script>
-// Submit form when member is selected
-document.querySelectorAll('.member-card input[type="radio"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        document.getElementById('memberForm').submit();
+    // Submit form when member is selected
+    document.querySelectorAll('.member-card input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('memberForm').submit();
+        });
     });
-});
+    
+    // Validate member selection before registering for events
+    document.querySelectorAll('.register-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const memberSelected = document.querySelector('input[name="member_id"]:checked');
+            if (!memberSelected) {
+                e.preventDefault();
+                alert('Please select your member profile first before registering for events.');
+                // Optionally scroll to member selection
+                document.querySelector('.member-section').scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
 </script>
 {% endblock %}
