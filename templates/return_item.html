@@ -15,7 +15,8 @@
                        value="{{ member['PersonID'] }}" 
                        {% if selected_member == member['PersonID'] %}checked{% endif %}>
                 <label for="member_{{ member['PersonID'] }}">
-                    {{ member['Name'] }} (ID: {{ member['PersonID'] }})
+                    <span class="member-name">{{ member['Name'] }}</span>
+                    <span class="member-id">ID: {{ member['PersonID'] }}</span>
                 </label>
             </div>
             {% endfor %}
@@ -67,22 +68,45 @@
 {% endif %}
 
 <style>
-.member-selection {
-    margin-bottom: 2rem;
+.member-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
 }
 .member-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
 }
 .member-card {
-    padding: 1rem;
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
+    background: white;
+    border-radius: 5px;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+.member-card.selected {
+    background: #e7f1ff;
+    border-left: 4px solid #0066cc;
+}
+.member-card input[type="radio"] {
+    display: none;
+}
+.member-card label {
+    display: block;
     cursor: pointer;
-    transition: all 0.3s ease; /* Smooth transition for hover effects */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Default subtle shadow */
+}
+.member-name {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+.member-id {
+    display: block;
+    font-size: 0.9em;
+    color: #666;
 }
 
 /* Hover effect */

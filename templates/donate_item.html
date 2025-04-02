@@ -18,10 +18,11 @@
     <form method="POST" id="donorForm">
         <div class="donor-grid">
             {% for donor in donors %}
-            <div class="donor-card {% if selected_donor == donor['PersonID'] %}selected{% endif %}">
+            <div class="donor-card {% if selected_donor == donor['PersonID'] %}selected{% endif %}"
+                onclick="this.querySelector('input').checked = true; this.closest('form').submit();">
                 <input type="radio" id="donor_{{ donor['PersonID'] }}" name="donor_id" 
-                       value="{{ donor['PersonID'] }}" 
-                       {% if selected_donor == donor['PersonID'] %}checked{% endif %}>
+                    value="{{ donor['PersonID'] }}" 
+                    {% if selected_donor == donor['PersonID'] %}checked{% endif %}>
                 <label for="donor_{{ donor['PersonID'] }}">
                     <span class="donor-name">{{ donor['Name'] }}</span>
                     <span class="donor-id">ID: {{ donor['PersonID'] }}</span>
@@ -114,9 +115,10 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.2s;
 }
-.donor-card.selected {
-    background: #e7f1ff;
-    border-left: 4px solid #0066cc;
+.donor-card:hover {
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15); 
+    background-color: #f8f9fa; 
 }
 .donor-card input[type="radio"] {
     display: none;
